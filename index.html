@@ -2,119 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Octo Strike - 5v5 bomb defusal in your browser</title>
-<meta name="description" content="A free 5v5 bomb-defusal FPS that runs in your browser: bots, buy menu, and peer-to-peer multiplayer.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%230d0f14%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%279%27 fill=%27none%27 stroke=%27%23ff9f2e%27 stroke-width=%273%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%272.5%27 fill=%27%23ff9f2e%27/%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/style.css">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%230a0b0e%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%279%27 fill=%27none%27 stroke=%27%23eba028%27 stroke-width=%273%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%272.5%27 fill=%27%23eba028%27/%3E%3C/svg%3E">
+<title>OpenStrike</title>
+<link rel="stylesheet" href="css/game.css">
 </head>
 <body>
-<canvas id="gl"></canvas>
-
-<!-- ================= in-game HUD ================= -->
-<div id="hud" class="hidden">
-  <div id="vignette"></div><div id="boomflash"></div>
-  <div id="scope"></div>
-  <div id="crosshair"><i></i><i></i><i></i><i></i></div>
-  <div id="hitmark"><i></i><i></i><i></i><i></i></div>
-
-  <div id="topbar">
-    <div class="side t"><span id="sT">0</span><small>T</small></div>
-    <div id="clock"><div id="timer">1:55</div><div id="roundlbl">Round 1</div></div>
-    <div class="side ct"><small>CT</small><span id="sC">0</span></div>
-  </div>
-  <canvas id="radar" width="170" height="170"></canvas>
-  <div id="feed"></div>
-  <div id="netinfo"></div>
-
-  <div id="centerMsg"></div>
-  <div id="prompt"></div>
-  <div id="progress"><div></div></div>
-  <div id="spec"></div>
-  <div id="banner"><b></b><span></span></div>
-
-  <div id="bl"><div><label>HEALTH</label><b id="hp">100</b></div><div><label>ARMOR</label><b id="ar">0</b></div><div class="money"><label>MONEY</label><b id="money">$800</b></div></div>
-  <div id="br"><div id="inv"></div><div id="wname"></div><div id="ammo"></div></div>
-
-  <div id="buy" class="hidden">
-    <h2>BUY MENU <small id="buyMoney"></small></h2>
-    <div class="cols">
-      <div><h3>Pistols</h3><button data-k="1" data-item="4"></button></div>
-      <div><h3>SMG / Shotgun</h3><button data-k="2" data-item="5"></button><button data-k="3" data-item="6"></button></div>
-      <div><h3>Rifles</h3><button data-k="4" data-item="rifle"></button><button data-k="5" data-item="9"></button></div>
-      <div><h3>Equipment</h3><button data-k="6" data-item="40"></button><button data-k="7" data-item="41"></button><button data-k="8" data-item="42"></button></div>
-    </div>
-    <p>Click an item or press its number. <kbd>B</kbd> / <kbd>Esc</kbd> closes. Only during freeze time.</p>
-  </div>
-
-  <div id="score" class="hidden"><h2 id="scoreTitle"></h2><div id="scoreBody"></div></div>
-</div>
-
-<!-- ================= pause overlay ================= -->
-<div id="pause" class="hidden">
-  <div class="card">
-    <h2 id="pauseTitle">Paused</h2>
-    <p id="pauseSub">Click to resume</p>
-    <div id="roomBox" class="hidden"><span>Room code</span><b id="roomCode"></b><button id="copyInvite" class="small">Copy invite link</button></div>
-    <div class="row"><button id="resume" class="primary">Resume</button><button id="fullscreen">Fullscreen</button><button id="leave" class="danger">Leave match</button></div>
-  </div>
-</div>
-
-<!-- ================= main menu ================= -->
-<div id="menu">
-  <div class="menuwrap">
-    <h1>OCTO<span>STRIKE</span></h1>
-    <p class="tag">5v5 bomb defusal that runs right in your browser. No install, no downloads.</p>
-
-    <div class="panel">
-      <div class="grid">
-        <label>Name <input id="name" maxlength="15" value="Player" autocomplete="off"></label>
-        <label>Team <select id="team"><option value="-1">Auto</option><option value="0">Terrorist</option><option value="1">Counter-Terrorist</option></select></label>
-        <label>Bot skill <select id="skill"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option></select></label>
-      </div>
-      <div class="row">
-        <button id="playSolo" class="primary">Play vs bots</button>
-        <button id="hostBtn">Host online game</button>
-      </div>
-      <div class="row join">
-        <input id="joinCode" placeholder="ROOM CODE" maxlength="8" autocomplete="off" spellcheck="false">
-        <button id="joinBtn">Join game</button>
-      </div>
-      <div id="status"></div>
-    </div>
-
-    <div class="panel two">
-      <div>
-        <h3>Controls</h3>
-        <table class="keys">
-          <tr><td>W A S D</td><td>move</td></tr><tr><td>Mouse</td><td>aim</td></tr><tr><td>Left click</td><td>shoot</td></tr>
-          <tr><td>Right click</td><td>scope (AWP)</td></tr><tr><td>Space</td><td>jump</td></tr><tr><td>Shift</td><td>walk (quiet)</td></tr>
-          <tr><td>R</td><td>reload</td></tr><tr><td>1 2 3 / wheel</td><td>weapons</td></tr><tr><td>B</td><td>buy menu (freeze time)</td></tr>
-          <tr><td>Hold E</td><td>plant / defuse</td></tr><tr><td>Tab</td><td>scoreboard</td></tr><tr><td>Esc</td><td>pause</td></tr>
-        </table>
-      </div>
-      <div>
-        <h3>How to play</h3>
-        <ul>
-          <li><b>T:</b> carry the bomb to site A or B and hold <kbd>E</kbd> to plant. Stop the CTs from defusing it.</li>
-          <li><b>CT:</b> eliminate the Ts or defuse the bomb (a kit halves defuse time).</li>
-          <li>First to <b>7</b> rounds wins. Sides swap after round 6. Win rounds to earn money and buy better gear.</li>
-          <li><b>Online:</b> one player hosts and shares the room code; everyone else joins. Empty slots are filled with bots.</li>
-        </ul>
-        <h3>Settings</h3>
-        <div class="grid settings">
-          <label>Sensitivity <input id="sens" type="range" min="0.2" max="3" step="0.05" value="1"></label>
-          <label>Volume <input id="vol" type="range" min="0" max="1" step="0.05" value="0.7"></label>
-          <label>Field of view <input id="fov" type="range" min="60" max="110" step="1" value="80"></label>
-          <label>Resolution <select id="res"><option value="0.75">Low</option><option value="1" selected>Medium</option><option value="1.5">High</option></select></label>
-        </div>
-      </div>
-    </div>
-    <p class="foot">Desktop browser with keyboard and mouse recommended. Multiplayer pairs players through PeerJS' free public broker, then connects them directly.</p>
-  </div>
-</div>
-
-<script src="js/vendor/peerjs.min.js"></script>
-<script type="module" src="js/main.js"></script>
+<div id=loading><div><b>OPEN</b><b style=color:#fff>STRIKE</b></div><span id=status>Loading...</span><small>Click inside the game to lock the mouse. Esc pauses.</small></div><div id=prompt style=display:none;position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);align-items:center;justify-content:center><form id=promptForm style="background:#15171c;border:1px solid #eba028;border-radius:10px;padding:18px;width:min(420px,90vw);font:600 16px system-ui,sans-serif;color:#eee"><div id=promptLabel style=margin-bottom:10px></div><input autocomplete=off id=promptInput style="width:100%;box-sizing:border-box;padding:10px;font-size:18px;border-radius:6px;border:1px solid #555;background:#0d0e11;color:#fff"><div style=display:flex;gap:10px;margin-top:14px;justify-content:flex-end><button style="padding:9px 16px;border-radius:6px;border:1px solid #555;background:#222;color:#ddd"type=button id=promptCancel>Cancel</button> <button style="padding:9px 16px;border-radius:6px;border:0;background:#eba028;color:#111;font-weight:700"type=submit>OK</button></div></form></div><a href=""id=popout rel=noopener target=_blank>Open in new tab ↗</a><canvas id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+<!-- shell.js: page glue the game calls into (text prompts, touch input, fullscreen) - from the original build -->
+<script src="js/shell.js"></script>
+<!-- boot.js: downloads openstrike.wasm, applies data/mods.json, then starts openstrike.js -->
+<script src="js/boot.js"></script>
 </body>
 </html>

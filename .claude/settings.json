@@ -3,12 +3,10 @@
     "allow": [
       "Bash(npm test)",
       "Bash(npm run serve)",
+      "Bash(npm run extract)",
       "Bash(node tests/:*)",
+      "Bash(python3 tools/extract_defaults.py)",
       "Bash(python3 -m http.server:*)",
-      "Bash(cmake:*)",
-      "Bash(g++:*)",
-      "Bash(make:*)",
-      "Bash(./build/cs2lan:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)"

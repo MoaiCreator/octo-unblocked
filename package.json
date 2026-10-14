@@ -1,10 +1,11 @@
 {
-  "name": "octo-strike",
+  "name": "openstrike-site",
   "private": true,
   "type": "module",
-  "description": "Octo Strike - 5v5 bomb defusal FPS in the browser (static site, three.js + PeerJS vendored)",
+  "description": "OpenStrike on GitHub Pages + admin page for maps, guns and skins",
   "scripts": {
-    "test": "node tests/sim.test.mjs && node tests/net.test.mjs",
-    "serve": "python3 -m http.server 8000"
+    "test": "node tests/admin.test.mjs",
+    "serve": "python3 -m http.server 8000",
+    "extract": "python3 tools/extract_defaults.py"
   }
 }

@@ -1,43 +1,55 @@
-# octo-unblocked
+# octo-unblocked: OpenStrike
 
-## Octo Strike: 5v5 bomb defusal that runs in your browser
+**Play:** https://moaicreator.github.io/octo-unblocked/
+**Admin (maps, guns, skins):** https://moaicreator.github.io/octo-unblocked/admin.html
 
-**Play it:** https://moaicreator.github.io/octo-unblocked/
+OpenStrike is a tactical 5v5 bomb-defusal game (C++ / raylib) compiled to WebAssembly. This repo hosts it on
+GitHub Pages as normal files instead of one giant HTML file, and adds an admin page for editing game content.
 
-No install and no downloads. It is a static site (HTML + JavaScript + three.js), so it works on GitHub Pages.
-three.js and PeerJS are vendored in `js/vendor/`, so the game loads nothing from a CDN.
+## Files
 
-### Features
-- 5v5 rounds: Terrorists plant the bomb at A or B (hold **E**), Counter-Terrorists eliminate them or defuse it. First to 7, sides swap after round 6.
-- Economy and **buy menu** (**B** in freeze time): pistols, SMG, shotgun, AK-47 / M4A4, AWP (scope with right click), armor, helmet, defuse kit.
-- Bots with line-of-sight vision, A* navigation, bomb plans, buying and three skill levels.
-- **Online multiplayer, peer to peer:** one player clicks *Host online game* and shares the 5-letter room code (or the invite link); friends click *Join game*. Empty slots are filled with bots. The host runs the match; hit detection is lag-compensated.
-- All sounds are synthesised at runtime, so there are no audio files.
+| File | What it is |
+|---|---|
+| `index.html`, `css/game.css` | The game page (same markup as the original build) |
+| `js/shell.js` | Page glue the game calls into: text prompts, touch input, fullscreen (from the original build) |
+| `js/boot.js` | Loader: downloads `openstrike.wasm`, applies `data/mods.json`, starts the game |
+| `openstrike.js`, `openstrike.wasm` | The compiled game (Emscripten runtime + binary), unchanged apart from loading the wasm as a file |
+| `admin.html`, `js/admin.js`, `css/admin.css` | Admin page |
+| `js/mapcheck.js` | Map validation (same rules as the game's own check) |
+| `js/github.js` | Publishes `data/mods.json` through the GitHub API |
+| `data/defaults.json` | The game's original maps, guns, skins and tile palette, extracted from the wasm |
+| `data/mods.json` | **Your edits.** Written by the admin page, read by every player on load |
+| `tools/extract_defaults.py` | Regenerates `data/defaults.json` from `openstrike.wasm` |
+| `cpp/` | The earlier CS-LAN C++ prototype (desktop, raylib + UDP) |
 
-### Controls
-WASD move, mouse aim, left click shoot, right click scope (AWP), Space jump, Shift walk (quiet), R reload, 1-3 or wheel weapons, B buy, hold E plant/defuse, Tab scoreboard, Esc pause.
+## Admin page
 
-### Multiplayer notes
-Browsers cannot open server sockets, so multiplayer uses WebRTC through [PeerJS](https://peerjs.com). The free public PeerJS broker is only used to pair the two browsers; game traffic then goes directly between them. This needs internet access, and strict school or corporate networks that block WebRTC will block online play (solo vs bots still works offline). Player positions are trusted by the host, so this is meant for friends, not ranked play.
+- **Maps:** edit the 5 built-in grid maps (Sandstone, Freight, Rooftops, Backlot, Cargo Yard): layout and name.
+  Add up to 3 new maps, which appear in the game's MAP selector as *Custom 1-3*. Tools: brush, rectangle, fill,
+  pick, mirror painting, undo/redo, and import/export in the in-game editor's text format. A live check uses the
+  game's rules (spawns and both sites must be reachable), and broken maps can't be published.
+- **Guns:** edit all 30 guns: name, price, damage, fire rate, magazine, reserve, reload, move speed, spread,
+  recoil, pellets, full-auto, kill reward, team and scope.
+- **Skins:** edit all 34 skins: name, rarity, pattern and three colours.
+- **Test in game** opens the game with your unpublished draft (`index.html?draft=1`). Only you see it.
+- **Publish** commits `data/mods.json`. Pages redeploys in about a minute and everyone gets the changes.
+  Publishing needs a [fine-grained GitHub token](https://github.com/settings/personal-access-tokens/new) for
+  this repo with *Contents: Read and write*. Anyone can open the page, but only people with a token can publish.
 
-### Run locally / develop
+### Limits (the game is a compiled binary)
 
-    npm run serve        # then open http://localhost:8000   (any static file server works)
-    npm test             # headless simulation tests + multiplayer protocol test (needs Node 18+)
+- The game has a fixed number of slots: 30 guns, 34 skins, 5 grid maps and 3 custom map slots.
+  A "new" gun or skin replaces an existing slot and keeps that slot's 3D model, sound and buy-menu position.
+  Adding extra slots needs the C++ source of OpenStrike and a rebuild.
+- Desert is hand-built (not a grid map) and can't be edited.
+- Mods change the game in the player's browser (bot matches). Servers you join use their own settings.
+- If a player has saved their own map in a custom slot, it isn't overwritten by a published map.
+- Two gun values (*Unknown A/B*) have unconfirmed meaning.
 
-Dev shortcut: `index.html?solo=1&skill=hard` starts a solo match immediately (no pointer lock, used by headless tests).
+## Develop
 
-### Deploy to GitHub Pages
-Settings -> Pages -> Deploy from a branch -> `main` / `(root)`. `.nojekyll` is included.
+    npm run serve     # http://localhost:8000 (needs a web server, not file://)
+    npm test          # map checker + publishing tests (Node 18+)
 
-### Layout
-- `index.html`, `css/style.css`: menu, HUD and overlays
-- `js/core.js`: constants, weapon table, map, physics, ray casting (shared by every module)
-- `js/sim.js`, `js/bots.js`, `js/nav.js`: game rules, bot AI, A* navigation (no DOM, runs in Node for tests)
-- `js/session.js`, `js/net.js`: solo/host/client sessions and the PeerJS transport
-- `js/render.js`, `js/audio.js`, `js/main.js`: three.js scene, synthesised sound, input and HUD
-- `tests/`: Node tests
-- `cpp/`: the earlier native C++ (raylib + UDP) version of the same game, kept for reference. Build with `cmake -S cpp -B build`.
-
-### Credits
-[three.js](https://threejs.org) (MIT) and [PeerJS](https://peerjs.com) (MIT) are bundled in `js/vendor/`. Octo Strike is an independent fan-style project and is not affiliated with Valve or Counter-Strike.
+`index.html?vanilla=1` starts the game without mods. If `openstrike.wasm` is replaced with a new build, run
+`npm run extract`. `boot.js` refuses to patch a build that doesn't match `data/defaults.json`.
