@@ -2,6 +2,7 @@
 // test them in the game and publish them to the repo as data/mods.json.
 import { checkMap, emptyMap, isGrid, ROWS, COLS } from './mapcheck.js';
 import { GitHub, guessRepo } from './github.js';
+import { bake } from './bake.js';
 
 const DRAFT_KEY = 'openstrike.adminDraft', GH_KEY = 'openstrike.adminGh', TOKEN_KEY = 'openstrike.adminToken';
 const $ = (id) => document.getElementById(id);
@@ -425,7 +426,12 @@ $('ghPublish').onclick = async () => {
     mods.updated = new Date().toISOString();
     const list = describeChanges(mods);
     const msg = $('ghMsg').value.trim() || `Admin: publish mods v${mods.version}` + (list.length ? ` (${list.length} change${list.length > 1 ? 's' : ''})` : '');
-    const res = await gh.putFile('data/mods.json', JSON.stringify(mods, null, 1) + '\n', msg);
+    ghLog('Building the game file...');
+    const orig = await fetch('data/openstrike.original.wasm', { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error('Could not load data/openstrike.original.wasm'); return r.arrayBuffer(); });
+    const baked = bake(orig, mods, S.defs);
+    if (!WebAssembly.validate(baked.wasm)) throw new Error('The built game file is not valid - nothing was published');
+    ghLog('Uploading the game file and mods.json...');
+    const res = await gh.commitFiles([{ path: 'openstrike.wasm', bytes: baked.wasm }, { path: 'data/mods.json', text: JSON.stringify(mods, null, 1) + '\n' }], msg);
     S.published = mods; localStorage.setItem(DRAFT_KEY, JSON.stringify(mods)); refreshDirty(); renderChanges();
     ghLog(`Published v${mods.version}. <a href="${esc(res.commitUrl || '#')}" target="_blank" rel="noopener">View commit</a> · GitHub Pages updates in about a minute (<a href="https://github.com/${esc(s.owner)}/${esc(s.repo)}/actions" target="_blank" rel="noopener">deploy status</a>).`, 'ok');
     toast('Published v' + mods.version);

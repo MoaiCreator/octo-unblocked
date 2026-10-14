@@ -4,29 +4,29 @@ Static GitHub Pages site. No build step. `README.md` has the user-facing overvie
 
 ## How modding works (no game source available)
 
-OpenStrike ships only as a compiled Emscripten build (`openstrike.js` + `openstrike.wasm`). The C++ source is
-not in this repo (`cpp/` is an older, unrelated prototype). All customisation is done by `js/boot.js`:
+OpenStrike ships only as a compiled Emscripten build. The C++ source is not in this repo (`cpp/` is an older,
+unrelated prototype). `data/openstrike.original.wasm` is the untouched build. Edits are recorded in
+`data/mods.json` and **baked into `openstrike.wasm`** by `js/bake.js` (admin Publish, `?draft=1`, `npm run bake`):
 
-1. Fetch `data/mods.json` (or the admin draft from `localStorage['openstrike.adminDraft']` when `?draft=1`).
-2. Merge published custom maps into `localStorage['openstrike.maps']`, which the game copies into its
-   `/.openstrike_maps.txt` file. The format is `slot N` + 40 rows of 48 chars, with slots 0-2. A slot the player edited themselves is kept
-   (tracked by hash in `openstrike.publishedSlots`).
-3. Pass the wasm bytes as `Module.wasmBinary` (it's a SINGLE_FILE build and can't fetch the wasm itself).
-4. In `Module.onRuntimeInitialized` (after static init, before `main`), write edits straight into linear memory:
-   - guns: 76-byte structs at 34860 (30 entries), field offsets in `tools/extract_defaults.py` `WEAPON_FIELDS`
-   - skins: 20-byte structs at 41152 (34): name ptr, rarity u8, pattern u8, 3x RGBA
-   - maps: the game's tables are indexed by map id 0-5: names at 39312 + 4*id, rows at 39344 + 160*id (40 pointers,
-     each -> 48-char C string). Rows are deduplicated by the linker, so edits malloc a new 40x49 block and
-     repoint, never write in place. Each map in `data/defaults.json` carries its own `nameAddr`/`rowsAddr`.
-   - Desert (id 0) has 40 null row pointers; the loader (wasm func 801) builds it with a generator (func 644).
-     When Desert's rows are edited, `patchCode()` first changes 3 bytes of the downloaded wasm so the loader
-     accepts id 0 and skips the generator (`codePatch` in defaults.json, verified by expected byte values).
-     Desert's original rows (`DESERT_ROWS` in the extractor) were captured from memory during a Desert match.
-   - strings: `_malloc` a new C string and repoint
-   Before patching it checks `data/defaults.json` `signature` against memory and skips mods on mismatch.
+- Every edit is a write to static memory, so the baked file = original + extra active data segments appended to
+  the data section (applied after the originals, so they win). Nothing else in the module changes except below.
+- Numbers: guns are 76-byte structs at 34860 (30), field offsets in `tools/extract_defaults.py` `WEAPON_FIELDS`;
+  skins are 20-byte structs at 41152 (34): name ptr, rarity u8, pattern u8, 3x RGBA.
+- Maps: tables indexed by map id 0-5: names at 39312 + 4*id, rows at 39344 + 160*id (40 pointers to 48-char
+  C strings). Each map in `data/defaults.json` carries `nameAddr`/`rowsAddr`.
+- New strings and row blocks go in a pool segment at the old heap start (`layout.heap.base`, 2931744). The heap
+  start is the sbrk variable at 784964 (read by wasm func 505), and it's moved past the pool.
+- Desert (id 0) has 40 null row pointers. The loader (func 801) builds it with a generator (func 644). When Desert's
+  rows change, 3 code bytes are patched (`codePatch` in defaults.json, verified against expected values) so the
+  loader accepts id 0 and skips the generator. `DESERT_ROWS` in the extractor were captured from memory during a
+  Desert match.
+- `bake()` checks the signature and heap start of the input and refuses anything but the original build.
+- `js/boot.js` only loads the wasm (`Module.wasmBinary`, since it's a SINGLE_FILE build that can't fetch it) and
+  merges published new maps into `localStorage['openstrike.maps']` (`slot N` + 40 rows of 48 chars, slots 0-2),
+  keeping slots the player edited (tracked by hash in `openstrike.publishedSlots`).
 
-`data/defaults.json` is generated from the wasm by `tools/extract_defaults.py` (memory image built from the
-data segments). If the wasm changes, rerun it. If it fails, find the tables again: the name strings are in the
+`data/defaults.json` is generated from `data/openstrike.original.wasm` by `tools/extract_defaults.py` (memory
+image built from the data segments). If the original changes, rerun it, then `npm run bake`. If it fails, find the tables again: the name strings are in the
 data segments, and the tables hold i32 pointers to them (search memory for the little-endian address).
 
 Map rules (`js/mapcheck.js`) were measured against the game's own "playable" check: walkable `. T S A B u L P`,
@@ -35,16 +35,19 @@ in the game's MAP selector.
 
 ## Test
 
-    npm test                       # tests/admin.test.mjs (defaults sanity, map rules, GitHub client with mocked fetch)
+    npm test                       # admin.test.mjs (defaults, map rules, GitHub client mocked) + bake.test.mjs
+    npm run bake                   # openstrike.wasm <- original + data/mods.json (commit both after editing mods.json)
     python3 -m http.server 8000    # then open / and /admin.html
 
 Headless Chromium works for smoke tests (`--use-angle=swiftshader`). The game runs at about 5 fps there, so hold keys
 for at least 600 ms. Useful URL flags: `?draft=1` (admin draft), `?vanilla=1` (no mods).
-Publishing has only been tested against a mocked GitHub API, not live.
+Publishing (one commit with openstrike.wasm + data/mods.json via the Git Data API) has been tested against a mocked
+API. The older single-file Contents API publish was used live successfully.
 
 ## Conventions
 
-- Don't edit `openstrike.js`/`openstrike.wasm` by hand. The only change from the original single-file build is that
-  `findWasmBinary()` returns `openstrike.wasm` instead of a base64 data URI.
+- Don't edit `openstrike.wasm` by hand: it's generated. Change `data/mods.json` (or use the admin) and run `npm run bake`.
+- The only change to `openstrike.js` from the original single-file build is that `findWasmBinary()` returns
+  `openstrike.wasm` instead of a base64 data URI.
 - Keep `mods.json` diffs minimal: `toMods()` in `js/admin.js` writes only fields that differ from defaults.
 - New gun/skin slots or more custom-map slots are impossible without the game's C++ source.

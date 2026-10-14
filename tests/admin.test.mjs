@@ -9,7 +9,7 @@ const defs = JSON.parse(readFileSync(new URL('../data/defaults.json', import.met
 ok(defs.maps.length === 6 && defs.maps.every(m => isGrid(m.rows)), '6 built-in maps (Desert + 5 grid maps), 40x48 each');
 const desert = defs.maps.find(m => m.gameId === 0);
 ok(desert && desert.name === 'Desert' && desert.rowsAddr === 39344 && desert.nameAddr === 39312, 'Desert is map 0 with its table slot at 39344');
-const wasm = readFileSync(new URL('../openstrike.wasm', import.meta.url));
+const wasm = readFileSync(new URL('../data/openstrike.original.wasm', import.meta.url));
 ok(desert.codePatch.length === 3 && desert.codePatch.every(p => wasm[p.offset] === p.from && p.from !== p.to), 'Desert loader patch bytes match openstrike.wasm');
 ok(defs.maps.filter(m => m.gameId > 0).every((m, i) => m.rowsAddr === 39504 + 160 * i), 'grid maps use the same table (39344 + id*160)');
 ok(defs.weapons.length === 30 && defs.weapons[17].name === 'AK-47' && defs.weapons[17].price === 2700 && defs.weapons[23].damage === 115, 'weapon table decoded (AK-47 $2700, AWP 115 dmg)');
@@ -51,4 +51,26 @@ ok(Buffer.from(files['data/mods.json'].content, 'base64').toString('utf8') === t
 ok(calls.every(c => c[2] === 'Bearer tok'), 'every request carries the token');
 ok(await gh.getFile('data/none.json') === null, 'missing file returns null');
 ok(JSON.stringify(guessRepo({ hostname: 'moaicreator.github.io', pathname: '/octo-unblocked/admin.html' })) === '{"owner":"moaicreator","repo":"octo-unblocked"}', 'repo is guessed from the Pages URL');
+// one commit with a binary + a text file through the Git Data API
+{
+  const store = { blobs: {}, trees: {}, commits: { base: { tree: { sha: 't0' } } }, ref: 'base' }; let n = 0; const seen = [];
+  globalThis.fetch = async (url, opts = {}) => {
+    const method = opts.method || 'GET', path = url.replace('https://api.github.com/repos/o/r', ''), body = opts.body ? JSON.parse(opts.body) : null;
+    seen.push(method + ' ' + path.replace(/[0-9a-f]{6,}/g, '*'));
+    const res = (b) => ({ ok: true, status: 200, json: async () => b });
+    if (method === 'GET' && path === '/git/ref/heads/main') return res({ object: { sha: store.ref } });
+    if (method === 'GET' && path.startsWith('/git/commits/')) return res(store.commits[path.split('/').pop()]);
+    if (method === 'POST' && path === '/git/blobs') { const sha = 'b' + (++n); store.blobs[sha] = body; return res({ sha }); }
+    if (method === 'POST' && path === '/git/trees') { const sha = 't' + (++n); store.trees[sha] = body; return res({ sha }); }
+    if (method === 'POST' && path === '/git/commits') { const sha = 'c' + (++n); store.commits[sha] = body; return res({ sha, html_url: 'https://github.com/o/r/commit/' + sha }); }
+    if (method === 'PATCH' && path === '/git/refs/heads/main') { store.ref = body.sha; return res({}); }
+    return { ok: false, status: 404, statusText: 'nope', json: async () => ({}) };
+  };
+  const bytes = new Uint8Array(200000); for (let i = 0; i < bytes.length; i++) bytes[i] = (i * 31) & 255;
+  const r = await new GitHub({ owner: 'o', repo: 'r', branch: 'main', token: 't' }).commitFiles([{ path: 'openstrike.wasm', bytes }, { path: 'data/mods.json', text: '{"v":1}' }], 'msg');
+  const c = store.commits[store.ref], t = store.trees[c.tree];
+  ok(r.commitUrl.endsWith(store.ref) && c.parents[0] === 'base' && c.message === 'msg', 'commitFiles makes one commit on top of the branch');
+  ok(t.base_tree === 't0' && t.tree.map(e => e.path).join() === 'openstrike.wasm,data/mods.json', 'the commit contains both files');
+  const wb = store.blobs[t.tree[0].sha]; ok(wb.encoding === 'base64' && Buffer.from(wb.content, 'base64').equals(Buffer.from(bytes)), 'binary game file uploaded byte-for-byte');
+}
 console.log(fails ? `\n${fails} FAILED` : '\nall passed'); process.exit(fails ? 1 : 0);

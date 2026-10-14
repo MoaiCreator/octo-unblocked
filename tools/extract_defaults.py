@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Read openstrike.wasm and write data/defaults.json: the game's built-in grid maps, guns, skins and
-map-editor palette, plus the memory addresses js/boot.js patches at load time.
+"""Read the original game (data/openstrike.original.wasm) and write data/defaults.json: the built-in maps,
+guns, skins and map-editor palette, plus the addresses js/bake.js needs to write edits into the game file.
 
-Run it again whenever openstrike.wasm is replaced:   python3 tools/extract_defaults.py
+Run it again whenever the original game is replaced:   python3 tools/extract_defaults.py
 It fails loudly if the tables are not where they used to be (a rebuilt game moves them); in that case
 the addresses in LAYOUT below must be found again (see CLAUDE.md, "Finding the tables").
 """
 import hashlib, json, os, struct, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-WASM = os.path.join(ROOT, 'openstrike.wasm')
+WASM = os.path.join(ROOT, 'data', 'openstrike.original.wasm')
 OUT = os.path.join(ROOT, 'data', 'defaults.json')
 
 # Addresses in the wasm linear memory (found by reverse engineering this exact build).
@@ -20,6 +20,9 @@ LAYOUT = {
     'skins':      {'addr': 41152, 'count': 34, 'stride': 20},
     'palette':    {'addr': 37952, 'count': 15, 'stride': 12},
     'rarities':   {'addr': 40304, 'count': 5},
+    # sbrk's "current break" variable (read by wasm func 505); its start value is where the heap begins.
+    # bake.js puts new strings/map rows there and moves the heap start past them.
+    'heap':       {'sbrkAddr': 784964},
 }
 # The full map tables are indexed by the game's map id 0-5: names at 39312, rows at 39344 + id*160.
 # Map 0 (Desert) has no rows in the table (40 null pointers); the game builds it in code instead.
@@ -214,6 +217,8 @@ def main():
         palette.append({'ch': chr(u32(a)), 'name': cstr(u32(a + 4)), 'color': rgba(a + 8)})
 
     rarities = [cstr(u32(L['rarities']['addr'] + 4 * k)) for k in range(L['rarities']['count'])]
+    L['heap']['base'] = u32(L['heap']['sbrkAddr'])
+    if not 700000 < L['heap']['base'] < 64 * 1024 * 1024: raise SystemExit('heap start looks wrong - layout changed')
 
     sha = hashlib.sha256(b).hexdigest()
     out = {

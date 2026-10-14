@@ -30,6 +30,10 @@
   "rarities": {
    "addr": 40304,
    "count": 5
+  },
+  "heap": {
+   "sbrkAddr": 784964,
+   "base": 2931744
   }
  },
  "weaponFields": [

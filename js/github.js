@@ -35,6 +35,26 @@ export class GitHub {
   }
 }
 
+// Several files in ONE commit (Git Data API). files: [{ path, text } | { path, bytes: Uint8Array }]
+GitHub.prototype.commitFiles = async function (files, message) {
+  const R = `/repos/${this.owner}/${this.repo}`, json = { 'Content-Type': 'application/json' };
+  const ref = await this.api(`${R}/git/ref/heads/${encodeURIComponent(this.branch)}`);
+  const parent = await this.api(`${R}/git/commits/${ref.object.sha}`);
+  const tree = [];
+  for (const f of files) {
+    let blob;
+    if (f.bytes) {
+      let bin = ''; for (let i = 0; i < f.bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, f.bytes.subarray(i, i + 0x8000));
+      blob = await this.api(`${R}/git/blobs`, { method: 'POST', headers: json, body: JSON.stringify({ content: btoa(bin), encoding: 'base64' }) });
+    } else blob = await this.api(`${R}/git/blobs`, { method: 'POST', headers: json, body: JSON.stringify({ content: f.text, encoding: 'utf-8' }) });
+    tree.push({ path: f.path, mode: '100644', type: 'blob', sha: blob.sha });
+  }
+  const newTree = await this.api(`${R}/git/trees`, { method: 'POST', headers: json, body: JSON.stringify({ base_tree: parent.tree.sha, tree }) });
+  const commit = await this.api(`${R}/git/commits`, { method: 'POST', headers: json, body: JSON.stringify({ message, tree: newTree.sha, parents: [ref.object.sha] }) });
+  await this.api(`${R}/git/refs/heads/${encodeURIComponent(this.branch)}`, { method: 'PATCH', headers: json, body: JSON.stringify({ sha: commit.sha, force: false }) });
+  return { commitUrl: commit.html_url, sha: commit.sha };
+};
+
 // owner/repo guess from a GitHub Pages URL like https://owner.github.io/repo/admin.html
 export function guessRepo(loc = location) {
   const m = /^([a-z0-9-]+)\.github\.io$/i.exec(loc.hostname);
