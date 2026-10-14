@@ -1,32 +1,43 @@
 # octo-unblocked
 
-CS-LAN: C++ bomb-defusal FPS for LAN play. raylib (graphics/audio) + raw UDP.
+## Octo Strike: 5v5 bomb defusal that runs in your browser
 
-## Build
+**Play it:** https://moaicreator.github.io/octo-unblocked/
 
-    cmake -B build && cmake --build build --config Release
-    ./build/cs2lan --name YourName        (Windows: build\Release\cs2lan.exe)
+No install and no downloads. It is a static site (HTML + JavaScript + three.js), so it works on GitHub Pages.
+three.js and PeerJS are vendored in `js/vendor/`, so the game loads nothing from a CDN.
 
-Needs CMake and a C++17 compiler; raylib downloads automatically.
-Linux deps: `sudo apt install libgl1-mesa-dev libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev`
+### Features
+- 5v5 rounds: Terrorists plant the bomb at A or B (hold **E**), Counter-Terrorists eliminate them or defuse it. First to 7, sides swap after round 6.
+- Economy and **buy menu** (**B** in freeze time): pistols, SMG, shotgun, AK-47 / M4A4, AWP (scope with right click), armor, helmet, defuse kit.
+- Bots with line-of-sight vision, A* navigation, bomb plans, buying and three skill levels.
+- **Online multiplayer, peer to peer:** one player clicks *Host online game* and shares the 5-letter room code (or the invite link); friends click *Join game*. Empty slots are filled with bots. The host runs the match; hit detection is lag-compensated.
+- All sounds are synthesised at runtime, so there are no audio files.
 
-## Play
+### Controls
+WASD move, mouse aim, left click shoot, right click scope (AWP), Space jump, Shift walk (quiet), R reload, 1-3 or wheel weapons, B buy, hold E plant/defuse, Tab scoreboard, Esc pause.
 
-- **H** host, **F** find LAN games, or type the host's IP and press **ENTER**. **M** cycles maps.
-- Dedicated server: `./cs2lan --dedicated --map warehouse`
-- Firewall: allow **UDP 27015** on the host. Everyone needs the same `maps/` files.
-- Controls: WASD, Shift walk, Space jump, LMB shoot, RMB scope (AWP), R reload, 1-4 / wheel weapons,
-  B buy menu (freeze time), hold E to plant/defuse, TAB scoreboard, F2 collision debug, ESC leave.
+### Multiplayer notes
+Browsers cannot open server sockets, so multiplayer uses WebRTC through [PeerJS](https://peerjs.com). The free public PeerJS broker is only used to pair the two browsers; game traffic then goes directly between them. This needs internet access, and strict school or corporate networks that block WebRTC will block online play (solo vs bots still works offline). Player positions are trusted by the host, so this is meant for friends, not ranked play.
 
-## Game rules
+### Run locally / develop
 
-T plant the bomb at site A or B, CT stop them or defuse. First to 7 rounds, sides swap after round 6.
-Economy: kill rewards per weapon, round win/loss bonuses, buy menu during freeze time.
+    npm run serve        # then open http://localhost:8000   (any static file server works)
+    npm test             # headless simulation tests + multiplayer protocol test (needs Node 18+)
 
-## Custom content
+Dev shortcut: `index.html?solo=1&skill=hard` starts a solo match immediately (no pointer lock, used by headless tests).
 
-- Maps: `maps/<name>.map` (see `maps/arena2.map` for boxes, `maps/warehouse.map` for an OBJ map).
-- Models (optional): `models/player_t.glb`, `models/player_ct.glb`, `models/weapons/<name>.glb`.
-  See `models/README.txt`. Missing files fall back to built-in shapes.
+### Deploy to GitHub Pages
+Settings -> Pages -> Deploy from a branch -> `main` / `(root)`. `.nojekyll` is included.
 
-Working on this with Claude Code? See `CLAUDE.md`.
+### Layout
+- `index.html`, `css/style.css`: menu, HUD and overlays
+- `js/core.js`: constants, weapon table, map, physics, ray casting (shared by every module)
+- `js/sim.js`, `js/bots.js`, `js/nav.js`: game rules, bot AI, A* navigation (no DOM, runs in Node for tests)
+- `js/session.js`, `js/net.js`: solo/host/client sessions and the PeerJS transport
+- `js/render.js`, `js/audio.js`, `js/main.js`: three.js scene, synthesised sound, input and HUD
+- `tests/`: Node tests
+- `cpp/`: the earlier native C++ (raylib + UDP) version of the same game, kept for reference. Build with `cmake -S cpp -B build`.
+
+### Credits
+[three.js](https://threejs.org) (MIT) and [PeerJS](https://peerjs.com) (MIT) are bundled in `js/vendor/`. Octo Strike is an independent fan-style project and is not affiliated with Valve or Counter-Strike.
