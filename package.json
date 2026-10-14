@@ -1,0 +1,10 @@
+{
+  "name": "octo-strike",
+  "private": true,
+  "type": "module",
+  "description": "Octo Strike - 5v5 bomb defusal FPS in the browser (static site, three.js + PeerJS vendored)",
+  "scripts": {
+    "test": "node tests/sim.test.mjs && node tests/net.test.mjs",
+    "serve": "python3 -m http.server 8000"
+  }
+}

@@ -1,6 +1,10 @@
 {
   "permissions": {
     "allow": [
+      "Bash(npm test)",
+      "Bash(npm run serve)",
+      "Bash(node tests/:*)",
+      "Bash(python3 -m http.server:*)",
       "Bash(cmake:*)",
       "Bash(g++:*)",
       "Bash(make:*)",
