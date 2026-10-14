@@ -432,8 +432,15 @@ $('ghPublish').onclick = async () => {
     if (!WebAssembly.validate(baked.wasm)) throw new Error('The built game file is not valid - nothing was published');
     ghLog('Uploading the game file and mods.json...');
     const res = await gh.commitFiles([{ path: 'openstrike.wasm', bytes: baked.wasm }, { path: 'data/mods.json', text: JSON.stringify(mods, null, 1) + '\n' }], msg);
+    // Make sure the site actually redeploys: if Pages builds from another branch, move that branch too.
+    let deployNote = '';
+    const pagesBranch = (await gh.pagesBranch()) || (s.branch !== 'octo-strike-remake' && await gh.api(`/repos/${s.owner}/${s.repo}/git/ref/heads/octo-strike-remake`, { allow404: true }) ? 'octo-strike-remake' : null);
+    if (pagesBranch && pagesBranch !== s.branch) {
+      try { if (await gh.fastForward(pagesBranch, res.sha)) deployNote = ` Also updated "${esc(pagesBranch)}", the branch GitHub Pages deploys from.`; }
+      catch (e) { deployNote = ` <b>Warning:</b> GitHub Pages deploys from "${esc(pagesBranch)}" and it couldn't be updated (${esc(e.message)}), so the site won't change. Set Pages to deploy from "${esc(s.branch)}" in the repo settings.`; }
+    }
     S.published = mods; localStorage.setItem(DRAFT_KEY, JSON.stringify(mods)); refreshDirty(); renderChanges();
-    ghLog(`Published v${mods.version}. <a href="${esc(res.commitUrl || '#')}" target="_blank" rel="noopener">View commit</a> · GitHub Pages updates in about a minute (<a href="https://github.com/${esc(s.owner)}/${esc(s.repo)}/actions" target="_blank" rel="noopener">deploy status</a>).`, 'ok');
+    ghLog(`Published v${mods.version}. <a href="${esc(res.commitUrl || '#')}" target="_blank" rel="noopener">View commit</a> · GitHub Pages updates in about a minute (<a href="https://github.com/${esc(s.owner)}/${esc(s.repo)}/actions" target="_blank" rel="noopener">deploy status</a>).${deployNote}`, deployNote.includes('Warning') ? 'err' : 'ok');
     toast('Published v' + mods.version);
   } catch (e) { ghLog(esc(e.message), 'err'); }
   finally { $('ghPublish').disabled = mapErrors(toMods()).length > 0; }

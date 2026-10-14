@@ -55,6 +55,21 @@ GitHub.prototype.commitFiles = async function (files, message) {
   return { commitUrl: commit.html_url, sha: commit.sha };
 };
 
+// Which branch GitHub Pages deploys from (null if the token can't read the Pages settings).
+GitHub.prototype.pagesBranch = async function () {
+  try { const p = await this.api(`/repos/${this.owner}/${this.repo}/pages`); return (p && p.source && p.source.branch) || null; }
+  catch (_) { return null; }
+};
+// Move another branch to a commit, fast-forward only (fails safely if that branch has its own commits).
+GitHub.prototype.fastForward = async function (branch, sha) {
+  const R = `/repos/${this.owner}/${this.repo}`;
+  const ref = await this.api(`${R}/git/ref/heads/${encodeURIComponent(branch)}`, { allow404: true });
+  if (!ref) return false;
+  if (ref.object.sha === sha) return true;
+  await this.api(`${R}/git/refs/heads/${encodeURIComponent(branch)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sha, force: false }) });
+  return true;
+};
+
 // owner/repo guess from a GitHub Pages URL like https://owner.github.io/repo/admin.html
 export function guessRepo(loc = location) {
   const m = /^([a-z0-9-]+)\.github\.io$/i.exec(loc.hostname);

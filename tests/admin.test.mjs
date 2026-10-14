@@ -73,4 +73,21 @@ ok(JSON.stringify(guessRepo({ hostname: 'moaicreator.github.io', pathname: '/oct
   ok(t.base_tree === 't0' && t.tree.map(e => e.path).join() === 'openstrike.wasm,data/mods.json', 'the commit contains both files');
   const wb = store.blobs[t.tree[0].sha]; ok(wb.encoding === 'base64' && Buffer.from(wb.content, 'base64').equals(Buffer.from(bytes)), 'binary game file uploaded byte-for-byte');
 }
+// keep the Pages branch in step with a publish
+{
+  const refs = { main: 'new', 'octo-strike-remake': 'old' }; let pagesOk = true;
+  globalThis.fetch = async (url, opts = {}) => {
+    const m = opts.method || 'GET', p = url.replace('https://api.github.com/repos/o/r', ''), res = (st, b) => ({ ok: st < 300, status: st, statusText: '', json: async () => b });
+    if (p === '/pages') return pagesOk ? res(200, { source: { branch: 'octo-strike-remake' } }) : res(403, { message: 'Resource not accessible' });
+    const r = /^\/git\/refs?\/heads\/(.+)$/.exec(p); if (!r) return res(404, {});
+    const b = decodeURIComponent(r[1]);
+    if (m === 'GET') return b in refs ? res(200, { object: { sha: refs[b] } }) : res(404, { message: 'Not Found' });
+    if (m === 'PATCH') { refs[b] = JSON.parse(opts.body).sha; return res(200, {}); }
+  };
+  const gh = new GitHub({ owner: 'o', repo: 'r', branch: 'main', token: 't' });
+  ok(await gh.pagesBranch() === 'octo-strike-remake', 'reads the branch Pages deploys from');
+  pagesOk = false; ok(await gh.pagesBranch() === null, 'no Pages permission -> null instead of an error');
+  ok(await gh.fastForward('octo-strike-remake', 'new') && refs['octo-strike-remake'] === 'new', 'moves the Pages branch to the published commit');
+  ok(await gh.fastForward('gone', 'new') === false, 'missing branch is skipped');
+}
 console.log(fails ? `\n${fails} FAILED` : '\nall passed'); process.exit(fails ? 1 : 0);
