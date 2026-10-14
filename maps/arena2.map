@@ -1,0 +1,27 @@
+# arena2.map - example of a hand-written box map (no OBJ needed)
+# box x0 y0 z0 x1 y1 z1 [r g b]
+sky 100 140 190
+floor 90 100 90
+bounds -30 -30 30 30
+box -31 0 -31  31 5 -30  120 120 130
+box -31 0  30  31 5  31  120 120 130
+box -31 0 -30 -30 5  30  120 120 130
+box  30 0 -30  31 5  30  120 120 130
+box  -8 0  -2   8 3   2  160 120 80
+box -20 0  10 -14 2.5 12 150 150 150
+box  14 0 -12  20 2.5 -10 150 150 150
+box  -2 0  14   2 1.2 18 90 140 200
+box -24 0 -24 -20 2  -20 160 110 60
+box  20 0  20  24 2   24 160 110 60
+spawn T  -6 26 0
+spawn T  -2 26 0
+spawn T   2 26 0
+spawn T   6 26 0
+spawn T   0 28 0
+spawn CT -6 -26 180
+spawn CT -2 -26 180
+spawn CT  2 -26 180
+spawn CT  6 -26 180
+spawn CT  0 -28 180
+site A -28 -28 -16 -16
+site B  16 -28  28 -16

@@ -1,0 +1,23 @@
+# warehouse.map - example of an OBJ-based map
+# Visual + collision both come from warehouse.obj.
+# 'collide_obj <file> <cell-size> [scale offx offy offz]' voxelizes the mesh into collision boxes.
+name Warehouse
+sky 120 150 190
+floor 110 112 108
+bounds -39 -39 39 39
+collide_obj warehouse.obj 0.4
+
+spawn T  -8 34 0
+spawn T  -4 34 0
+spawn T   0 34 0
+spawn T   4 34 0
+spawn T   8 34 0
+spawn CT -8 -36 180
+spawn CT -4 -36 180
+spawn CT  0 -36 180
+spawn CT  4 -36 180
+spawn CT  8 -36 180
+
+# bomb sites (rectangles: x0 z0 x1 z1)
+site A -12 -18 -2 -8
+site B 16 10 30 22
