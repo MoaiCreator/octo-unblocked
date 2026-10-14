@@ -38,7 +38,7 @@ GitHub Pages as normal files instead of one giant HTML file, and adds an admin p
 
 ### Limits (the game is a compiled binary)
 
-- The game has a fixed number of slots: 30 guns, 34 skins, 5 grid maps and 3 custom map slots.
+- The game has a fixed number of slots: 30 guns, 34 skins, 6 built-in maps and 3 custom map slots.
   A "new" gun or skin replaces an existing slot and keeps that slot's 3D model, sound and buy-menu position.
   Adding extra slots needs the C++ source of OpenStrike and a rebuild.
 - Desert is normally built by the game's code rather than read from the map table. When its layout is edited,
