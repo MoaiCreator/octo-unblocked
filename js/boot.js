@@ -4,6 +4,9 @@
 //         download openstrike.wasm -> start openstrike.js -> after the runtime initialises but before
 //         main() runs, write the edited guns / skins / built-in maps straight into the game's memory.
 // Nothing in openstrike.wasm is modified on disk. If anything looks wrong the game starts unmodded.
+// Desert is the one exception that needs a code change: the game normally builds it in code, so when its
+// layout is edited, three bytes of the downloaded wasm are changed in memory so Desert loads from the map
+// table like the other maps (offsets and expected bytes come from data/defaults.json).
 (function () {
   'use strict';
   var params = new URLSearchParams(location.search);
@@ -53,8 +56,23 @@
     } catch (e) { console.warn('[mods] could not merge custom maps', e); }
   }
 
+  // ------------------------------------------------------------ wasm code patch (Desert)
+  // Returns the set of map indexes whose code patch was applied; maps needing one that fails are skipped.
+  function patchCode(mods, defs, buf) {
+    var done = {}, bytes = new Uint8Array(buf);
+    ((mods.maps && mods.maps.builtin) || []).forEach(function (m) {
+      var d = defs.maps[m.index];
+      if (!d || !d.codePatch || !validRows(m.rows)) return;
+      var ok = d.codePatch.every(function (p) { return bytes[p.offset] === p.from || bytes[p.offset] === p.to; });
+      if (!ok) { console.warn('[mods] ' + d.name + ': loader bytes differ from data/defaults.json, keeping the original layout'); return; }
+      d.codePatch.forEach(function (p) { bytes[p.offset] = p.to; });
+      done[m.index] = true;
+    });
+    return done;
+  }
+
   // ------------------------------------------------------------ memory patching
-  function patchMemory(mods, defs) {
+  function patchMemory(mods, defs, codeOk) {
     var malloc = window._malloc;
     if (!window.HEAPU8 || typeof malloc !== 'function') { console.warn('[mods] runtime not reachable, starting unmodded'); return; }
     // fresh views every time: malloc can grow memory, which replaces the underlying buffer
@@ -100,13 +118,14 @@
     });
     var ml = L.mapRows;
     ((mods.maps && mods.maps.builtin) || []).forEach(function (m) {
-      if (!(m.index >= 0 && m.index < ml.count)) return;
-      if (m.name && m.name !== defs.maps[m.index].name) { var mp = newStr(m.name); setPtr(L.mapNames.addr + 4 * m.index, mp); }
-      if (validRows(m.rows)) {
+      var d = defs.maps[m.index]; if (!d) return;
+      var nameAddr = d.nameAddr || (L.mapNames.addr + 4 * m.index), rowsAddr = d.rowsAddr || (ml.addr + 160 * m.index);
+      if (m.name && m.name !== d.name) { var mp = newStr(m.name); setPtr(nameAddr, mp); }
+      if (validRows(m.rows) && (!d.codePatch || codeOk[m.index])) {
         var block = malloc(40 * 49), h = HU();
         m.rows.forEach(function (row, r) {
           var p = block + r * 49; for (var i = 0; i < 48; i++) h[p + i] = row.charCodeAt(i); h[p + 48] = 0;
-          setPtr(ml.addr + 4 * (m.index * 40 + r), p);
+          setPtr(rowsAddr + 4 * r, p);
         });
       }
       n++;
@@ -135,10 +154,12 @@
     var mods = res[0];
     var go = function (defs) {
       if (mods) mergeCustomMaps(mods);
+      var codeOk = {};
+      if (mods && defs) { try { codeOk = patchCode(mods, defs, res[1]); } catch (e) { console.warn('[mods] code patch failed', e); } }
       Module.wasmBinary = res[1];
       if (mods && defs) {
         var orig = Module.onRuntimeInitialized;
-        Module.onRuntimeInitialized = function () { try { patchMemory(mods, defs); } catch (e) { console.warn('[mods] patch failed', e); } if (orig) orig.apply(this, arguments); };
+        Module.onRuntimeInitialized = function () { try { patchMemory(mods, defs, codeOk); } catch (e) { console.warn('[mods] patch failed', e); } if (orig) orig.apply(this, arguments); };
       }
       window.__modsLoaded = !!mods;
       status('Starting...');

@@ -6,7 +6,12 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
 const defs = JSON.parse(readFileSync(new URL('../data/defaults.json', import.meta.url)));
 
 // defaults extracted from the wasm look right
-ok(defs.maps.length === 5 && defs.maps.every(m => isGrid(m.rows)), '5 built-in grid maps, 40x48 each');
+ok(defs.maps.length === 6 && defs.maps.every(m => isGrid(m.rows)), '6 built-in maps (Desert + 5 grid maps), 40x48 each');
+const desert = defs.maps.find(m => m.gameId === 0);
+ok(desert && desert.name === 'Desert' && desert.rowsAddr === 39344 && desert.nameAddr === 39312, 'Desert is map 0 with its table slot at 39344');
+const wasm = readFileSync(new URL('../openstrike.wasm', import.meta.url));
+ok(desert.codePatch.length === 3 && desert.codePatch.every(p => wasm[p.offset] === p.from && p.from !== p.to), 'Desert loader patch bytes match openstrike.wasm');
+ok(defs.maps.filter(m => m.gameId > 0).every((m, i) => m.rowsAddr === 39504 + 160 * i), 'grid maps use the same table (39344 + id*160)');
 ok(defs.weapons.length === 30 && defs.weapons[17].name === 'AK-47' && defs.weapons[17].price === 2700 && defs.weapons[23].damage === 115, 'weapon table decoded (AK-47 $2700, AWP 115 dmg)');
 ok(defs.skins.length === 34 && defs.skins.every(s => s.rarity <= 4 && /^#[0-9a-f]{6}$/.test(s.colors[0])), '34 skins decoded');
 ok(defs.palette.length === 15 && defs.palette[0].ch === '#', 'editor palette decoded');

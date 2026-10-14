@@ -21,6 +21,61 @@ LAYOUT = {
     'palette':    {'addr': 37952, 'count': 15, 'stride': 12},
     'rarities':   {'addr': 40304, 'count': 5},
 }
+# The full map tables are indexed by the game's map id 0-5: names at 39312, rows at 39344 + id*160.
+# Map 0 (Desert) has no rows in the table (40 null pointers); the game builds it in code instead.
+# Its layout below was captured from game memory while a Desert match was running.
+DESERT = {'gameId': 0, 'nameAddr': 39312, 'rowsAddr': 39344}
+DESERT_ROWS = [
+        "################################################",
+        "################################################",
+        "##PPBBBBBBBBBB####kSSSSSSSSSSS####AAAAAAoAAAAA##",
+        "##PPLBBBBBBBpB....SSSSSSSSScSS....AAAAAAAAAACA##",
+        "##BBBBBBBBBBBB....SScSSSSSSSSS....AAAAAAAAAAAA##",
+        "##BBBCCBBBBBBB....SSSSSSSSSSSS....AAAACcAAAAAA##",
+        "##BBBcBBBBBBBk....SSSSSSSSSSSS....AAAAcAAAAAAA##",
+        "##BBBBBBBBBBBB####SSSSSSSSSSSo####AAAAAAAAAAAA##",
+        "##BBBBBBBBBBBB#######......#######AAAAAAAAAcAA##",
+        "##oBBBBBBBccBB#######......#######AAcAAAAAAAAA##",
+        "##BcBBBBBBBBBB#######......#######AAAAAAAAAAPP##",
+        "##BBBBBBBBBBBB#######......#######AAAAAAAAALPP##",
+        "##......#################..#######...####.....##",
+        "##......#############......#######...####....o##",
+        "##......#############..###########...####..c..##",
+        "##uuuuuu#############................####.....##",
+        "##uuuuuu#############..............h.####.....##",
+        "##uuuuuu#############.p..............####.....##",
+        "##uuupuu#############......###..#########...C.##",
+        "##uuuuuu#############......###..#####.........##",
+        "##uuuuuu#############..c...###..#####....o....##",
+        "##uuuuuu#############......###................##",
+        "##uuuuuuuuuuuuuuuuuuu......###..........o.....##",
+        "##uuuuuuuuuuuuucuuuuu......##############.....##",
+        "##uuuuuuuuuuuuuuuuuuu....c.################..###",
+        "##uuuuuu#############hh....################..###",
+        "##uupuuu#############......##############.....##",
+        "##uuuuuu#############......##############.....##",
+        "##uuuuuu#############......##############.c...##",
+        "##uuuuuu#############......##############...k.##",
+        "##uuuuuu#############......#######............##",
+        "##uuuuuu#############......#######............##",
+        "##............TTTTTTTTTTTTTTTTTTTT.....c......##",
+        "##..c.........TTTTTTTTTTTTTTTTTTTT............##",
+        "##............TTTTTTTTTTTTTTTTCTTT##############",
+        "##............TTTcTTTTTTTTTTTTTTTT##############",
+        "##############TTTTTTTTTTcTTTTTTTTT##############",
+        "##############TTTTTTTTTTTTTTTTTTTT##############",
+        "##############oTTTTTTTTTTTTTTTTTTk##############",
+        "################################################"
+]
+# To let Desert load from the table like the other maps, boot.js changes three bytes in the map loader
+# (wasm function 801): the check "1 <= id <= 5" becomes "0 <= id <= 5", and the branch that calls the
+# Desert generator for id 0 is disabled. Offsets are verified below against the exact bytes.
+LOADER_FUNC = 801
+LOADER_PATCHES = [  # (pattern, index of byte to change within the pattern, new byte)
+    ('41016b41ff017141044b', 1, 0x00),   # i32.const 1 -> 0   (id - 1  -> id - 0)
+    ('41016b41ff017141044b', 8, 0x05),   # i32.const 4 -> 5   (id > 4  -> id > 5)
+    ('41066b417a4d',         4, 0x79),   # i32.const -6 -> -7 (id 0 no longer takes the generator branch)
+]
 # Weapon struct (76 bytes). Offsets are from the start of the entry.
 WEAPON_FIELDS = [
     # key,        offset, type, label
@@ -82,6 +137,38 @@ def memory_image(b):
     return mem
 
 
+def function_body(b, func_index):
+    """(start, size) of a function body in the code section, by global function index."""
+    i, n_imports, bodies = 8, 0, []
+    while i < len(b):
+        sid = b[i]; i += 1; size, i = leb(b, i); end = i + size
+        if sid == 2:
+            n, j = leb(b, i)
+            for _ in range(n):
+                l, j = leb(b, j); j += l; l, j = leb(b, j); j += l; kind = b[j]; j += 1
+                if kind == 0: _, j = leb(b, j); n_imports += 1
+                elif kind == 1: j += 1; fl, j = leb(b, j); _, j = leb(b, j); j = leb(b, j)[1] if fl & 1 else j
+                elif kind == 2: fl, j = leb(b, j); _, j = leb(b, j); j = leb(b, j)[1] if fl & 1 else j
+                elif kind == 3: j += 2
+        elif sid == 10:
+            n, j = leb(b, i)
+            for _ in range(n):
+                sz, j2 = leb(b, j); bodies.append((j2, sz)); j = j2 + sz
+        i = end
+    return bodies[func_index - n_imports]
+
+
+def loader_patches(b):
+    start, size = function_body(b, LOADER_FUNC)
+    body = b[start:start + size]; out = []
+    for pat, k, new in LOADER_PATCHES:
+        p = bytes.fromhex(pat)
+        if body.count(p) != 1: raise SystemExit(f'loader pattern {pat} not found exactly once - the game build changed')
+        off = start + body.index(p) + k
+        out.append({'offset': off, 'from': b[off], 'to': new})
+    return out
+
+
 def main():
     b = open(WASM, 'rb').read()
     mem = memory_image(b)
@@ -96,7 +183,14 @@ def main():
     for m in range(L['mapNames']['count']):
         rows = [cstr(u32(L['mapRows']['addr'] + 4 * (m * 40 + r))) for r in range(40)]
         if any(len(r) != 48 for r in rows): raise SystemExit('map rows are not 48 wide - layout changed')
-        maps.append({'index': m, 'name': cstr(u32(L['mapNames']['addr'] + 4 * m)), 'rows': rows})
+        maps.append({'index': m, 'gameId': m + 1, 'name': cstr(u32(L['mapNames']['addr'] + 4 * m)), 'rows': rows,
+                     'nameAddr': L['mapNames']['addr'] + 4 * m, 'rowsAddr': L['mapRows']['addr'] + 160 * m})
+    # Desert: generated in code, table slot empty
+    if any(u32(DESERT['rowsAddr'] + 4 * r) for r in range(40)): raise SystemExit('Desert row slot is not empty - layout changed')
+    if len(DESERT_ROWS) != 40 or any(len(r) != 48 for r in DESERT_ROWS): raise SystemExit('DESERT_ROWS must be 40x48')
+    maps.append({'index': len(maps), 'gameId': 0, 'name': cstr(u32(DESERT['nameAddr'])), 'rows': DESERT_ROWS,
+                 'nameAddr': DESERT['nameAddr'], 'rowsAddr': DESERT['rowsAddr'], 'generated': True,
+                 'codePatch': loader_patches(b)})
 
     weapons = []
     for k in range(L['weapons']['count']):

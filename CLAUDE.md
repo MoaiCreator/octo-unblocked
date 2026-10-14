@@ -15,8 +15,13 @@ not in this repo (`cpp/` is an older, unrelated prototype). All customisation is
 4. In `Module.onRuntimeInitialized` (after static init, before `main`), write edits straight into linear memory:
    - guns: 76-byte structs at 34860 (30 entries), field offsets in `tools/extract_defaults.py` `WEAPON_FIELDS`
    - skins: 20-byte structs at 41152 (34): name ptr, rarity u8, pattern u8, 3x RGBA
-   - grid maps: name pointers at 39316 (5), row pointers at 39504 (5x40, each -> 48-char C string; rows are
-     deduplicated by the linker, so edits malloc a new 40x49 block and repoint, never write in place)
+   - maps: the game's tables are indexed by map id 0-5: names at 39312 + 4*id, rows at 39344 + 160*id (40 pointers,
+     each -> 48-char C string). Rows are deduplicated by the linker, so edits malloc a new 40x49 block and
+     repoint, never write in place. Each map in `data/defaults.json` carries its own `nameAddr`/`rowsAddr`.
+   - Desert (id 0) has 40 null row pointers; the loader (wasm func 801) builds it with a generator (func 644).
+     When Desert's rows are edited, `patchCode()` first changes 3 bytes of the downloaded wasm so the loader
+     accepts id 0 and skips the generator (`codePatch` in defaults.json, verified by expected byte values).
+     Desert's original rows (`DESERT_ROWS` in the extractor) were captured from memory during a Desert match.
    - strings: `_malloc` a new C string and repoint
    Before patching it checks `data/defaults.json` `signature` against memory and skips mods on mismatch.
 

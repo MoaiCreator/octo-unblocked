@@ -75,9 +75,12 @@ $('testBtn').onclick = () => {
 const curMap = () => S.sel.kind === 'builtin' ? S.work.maps.builtin[S.sel.i] : S.work.maps.custom[S.sel.i];
 const mapKey = () => S.sel.kind + S.sel.i;
 const tileColor = {}, KEYS = '1234567890qwert';
+// built-in maps in the game's own order (Desert first), whatever their index in mods.json
+const builtinOrder = () => S.defs.maps.map((m, i) => i).sort((a, b) => (S.defs.maps[a].gameId ?? a + 1) - (S.defs.maps[b].gameId ?? b + 1));
 function renderMapList() {
   const d = S.defs;
-  $('mapListBuiltin').innerHTML = S.work.maps.builtin.map((m, i) => {
+  $('mapListBuiltin').innerHTML = builtinOrder().map((i) => {
+    const m = S.work.maps.builtin[i];
     const mod = m.name !== d.maps[i].name || m.rows.join('') !== d.maps[i].rows.join('');
     const bad = checkMap(m.rows).errors.length;
     return `<button class="item ${S.sel.kind === 'builtin' && S.sel.i === i ? 'on' : ''}" data-k="builtin" data-i="${i}">${esc(m.name)}${m.name !== d.maps[i].name ? ` <small>(${esc(d.maps[i].name)})</small>` : ''}${bad ? ' <small class="r3">!</small>' : ''}${mod ? '<span class="dot" title="Edited"></span>' : ''}</button>`;
@@ -118,7 +121,7 @@ function renderMapSide() {
     ? `<h3>Actions</h3><button id="copyToCustom">Copy into a new map slot</button>`
     : `<h3>Actions</h3><button id="removeCustom" class="danger">Remove this map</button>`;
   if (builtin) $('copyToCustom').onclick = () => { const free = S.work.maps.custom.indexOf(null); if (free < 0) return toast('All 3 custom slots are used'); newCustom(free, m.rows.slice()); S.work.maps.custom[free].name = m.name + ' copy'; renderMapList(); renderMapSide(); };
-  else $('removeCustom').onclick = () => { if (!confirm('Remove this map? Players lose it after you publish.')) return; S.work.maps.custom[S.sel.i] = null; selectMap('builtin', 0); changed(); };
+  else $('removeCustom').onclick = () => { if (!confirm('Remove this map? Players lose it after you publish.')) return; S.work.maps.custom[S.sel.i] = null; selectMap('builtin', builtinOrder()[0]); changed(); };
   $('mapReset').textContent = builtin ? 'Reset to original' : 'Clear';
 }
 $('mapName').oninput = () => { const m = curMap(); if (!m) return; m.name = $('mapName').value.replace(/[^\x20-\x7e]/g, '').slice(0, 24) || 'Untitled'; renderMapList(); changed(); };
@@ -445,7 +448,7 @@ $('discard').onclick = () => {
 
 // ================================================================== boot
 function renderAll() {
-  if (!curMap()) S.sel = { ...S.sel, kind: 'builtin', i: 0 };
+  if (!curMap()) S.sel = { ...S.sel, kind: 'builtin', i: builtinOrder()[0] };
   renderMapList(); renderPalette(); renderMapSide(); renderGunList(); renderGunForm(); renderSkinGrid(); renderSkinForm(); renderChanges();
   sizeGrid(); drawGrid();
 }
@@ -453,7 +456,7 @@ async function init() {
   const get = (u) => fetch(u, { cache: 'no-cache' }).then((r) => r.ok ? r.json() : null).catch(() => null);
   const [defs, pub] = await Promise.all([get('data/defaults.json'), get('data/mods.json')]);
   if (!defs) { document.body.innerHTML = '<p style="padding:30px">Could not load data/defaults.json. Open this page through the website (or a local web server), not as a file.</p>'; return; }
-  S.defs = defs; S.published = pub;
+  S.defs = defs; S.published = pub; S.sel.i = builtinOrder()[0];
   defs.palette.forEach((p) => tileColor[p.ch] = p.color);
   let draft = null; try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (_) { }
   S.work = fromMods(draft || pub);

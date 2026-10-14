@@ -24,7 +24,7 @@ GitHub Pages as normal files instead of one giant HTML file, and adds an admin p
 
 ## Admin page
 
-- **Maps:** edit the 5 built-in grid maps (Sandstone, Freight, Rooftops, Backlot, Cargo Yard): layout and name.
+- **Maps:** edit all 6 built-in maps (Desert, Sandstone, Freight, Rooftops, Backlot, Cargo Yard): layout and name.
   Add up to 3 new maps, which appear in the game's MAP selector as *Custom 1-3*. Tools: brush, rectangle, fill,
   pick, mirror painting, undo/redo, and import/export in the in-game editor's text format. A live check uses the
   game's rules (spawns and both sites must be reachable), and broken maps can't be published.
@@ -41,7 +41,10 @@ GitHub Pages as normal files instead of one giant HTML file, and adds an admin p
 - The game has a fixed number of slots: 30 guns, 34 skins, 5 grid maps and 3 custom map slots.
   A "new" gun or skin replaces an existing slot and keeps that slot's 3D model, sound and buy-menu position.
   Adding extra slots needs the C++ source of OpenStrike and a rebuild.
-- Desert is hand-built (not a grid map) and can't be edited.
+- Desert is normally built by the game's code rather than read from the map table. When its layout is edited,
+  `boot.js` changes three bytes of the downloaded game in memory so Desert loads from the table like the
+  other maps. The file in the repo is never changed. The random-map generator still uses the original Desert
+  as its fallback.
 - Mods change the game in the player's browser (bot matches). Servers you join use their own settings.
 - If a player has saved their own map in a custom slot, it isn't overwritten by a published map.
 - Two gun values (*Unknown A/B*) have unconfirmed meaning.
