@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "build": "f7ebbd2fe74d1c1c",
  "maps": {
   "builtin": [
@@ -53,5 +53,5 @@
  },
  "weapons": [],
  "skins": [],
- "updated": "2026-10-14T17:39:21.200Z"
+ "updated": "2026-10-14T17:40:25.684Z"
 }
