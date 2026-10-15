@@ -6,6 +6,7 @@
 //   - downloads the wasm with a progress bar and hands it to openstrike.js
 // URL flags:  ?draft=1    play the admin's unpublished draft (baked in this browser from the original file)
 //             ?vanilla=1  play the original game with no edits
+//             ?hd=0       use the game's own textures instead of the HD pack (js/texhook.js)
 (function () {
   'use strict';
   var params = new URLSearchParams(location.search);
@@ -67,8 +68,12 @@
   function start(buf, mods) {
     if (mods) mergeCustomMaps(mods);
     Module.wasmBinary = buf;
-    status('Starting...');
-    var s = document.createElement('script'); s.src = 'openstrike.js'; document.body.appendChild(s);
+    var hd = params.get('hd') !== '0' && window.OSTex;
+    status(hd ? 'Loading HD textures...' : 'Starting...');
+    (hd ? window.OSTex.load() : Promise.resolve()).then(function () {
+      status('Starting...');
+      var s = document.createElement('script'); s.src = 'openstrike.js'; document.body.appendChild(s);
+    });
   }
   function fail(e) { status('Could not load the game: ' + e.message); console.error(e); }
 

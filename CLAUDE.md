@@ -29,6 +29,18 @@ unrelated prototype). `data/openstrike.original.wasm` is the untouched build. Ed
 image built from the data segments). If the original changes, rerun it, then `npm run bake`. If it fails, find the tables again: the name strings are in the
 data segments, and the tables hold i32 pointers to them (search memory for the little-endian address).
 
+## HD textures (`js/texhook.js`)
+
+The game generates its textures in code and uploads them with `gl.texImage2D`. `texhook.js` wraps the WebGL
+prototype before the game starts: each RGBA upload is fingerprinted (FNV over ~4k sampled bytes + size, stable
+across runs) and, if `textures/manifest.json` has that fingerprint, the replacement image is uploaded instead with
+mipmaps + anisotropic filtering; later filter changes and level>0 uploads for that texture are ignored.
+`tools/make_textures.py` makes the pack. Fingerprints of all game textures, in upload order: 1x1 white, sand
+(93010b89), plaster (ff53e8cb, also used for roofs, so it must not have distinct features), brick (18cbb206),
+crate (3adc556b), tiles (e33098ab), concrete panels (bb219baa), dirt (9fcbb8d4), metal (30231164),
+concrete (eee7957d), sandbags (c887e4f3), dark blue (b624eb5f, unknown use), barrels (f767d344: 4 colour
+columns, one per barrel), glow/flash/smoke/shadow, A/B site letters, minimap (map-dependent, never replace).
+
 Map rules (`js/mapcheck.js`) were measured against the game's own "playable" check: walkable `. T S A B u L P`,
 where `P` (platform) only connects to `P`/`L`, and blocking `# p c C k o h`. Custom maps that fail it don't appear
 in the game's MAP selector.
@@ -50,4 +62,6 @@ API. The older single-file Contents API publish was used live successfully.
 - The only change to `openstrike.js` from the original single-file build is that `findWasmBinary()` returns
   `openstrike.wasm` instead of a base64 data URI.
 - Keep `mods.json` diffs minimal: `toMods()` in `js/admin.js` writes only fields that differ from defaults.
-- New gun/skin slots or more custom-map slots are impossible without the game's C++ source.
+- New gun/skin slots or more custom-map slots are impossible without the game's C++ source. Same for stacking,
+  hand-placed decorations, gun meshes and player models (all built in code).
+- The main menu background builds Desert through another path, so it still shows the original layout.

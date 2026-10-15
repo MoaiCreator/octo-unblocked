@@ -12,6 +12,8 @@ GitHub Pages as normal files instead of one giant HTML file, and adds an admin p
 |---|---|
 | `index.html`, `css/game.css` | The game page (same markup as the original build) |
 | `js/shell.js` | Page glue the game calls into: text prompts, touch input, fullscreen (from the original build) |
+| `js/texhook.js`, `textures/` | HD texture pack: swaps the game's generated textures (cobblestone, brick, plaster, crates, metal, sandbags, barrels...) and turns on mipmaps/anisotropic filtering. `?hd=0` turns it off |
+| `js/mobile.js`, `manifest.webmanifest`, `icons/` | Phone fixes (no zoom/scroll bounce) and home-screen app support, which is how fullscreen works on iPhone |
 | `js/boot.js` | Loader: downloads `openstrike.wasm` with a progress bar, fills published new maps into the custom slots, starts the game |
 | `openstrike.js`, `openstrike.wasm` | The game (Emscripten runtime + binary). **`openstrike.wasm` contains your published edits** |
 | `data/openstrike.original.wasm` | The untouched original game, which every publish is built from |
@@ -22,7 +24,17 @@ GitHub Pages as normal files instead of one giant HTML file, and adds an admin p
 | `data/defaults.json` | The game's original maps, guns, skins and tile palette, extracted from the original wasm |
 | `data/mods.json` | The list of your edits, so the admin page can reopen them. The game itself reads the edits from `openstrike.wasm` |
 | `tools/extract_defaults.py` | Regenerates `data/defaults.json` from `data/openstrike.original.wasm` |
+| `tools/make_textures.py` | Regenerates the HD texture pack (all procedural, tileable) |
+| `tools/desert_overhaul.py` | The overhauled Desert layout (writes it into `data/mods.json`; then `npm run bake`) |
 | `cpp/` | The earlier CS-LAN C++ prototype (desktop, raylib + UDP) |
+
+## Phones
+
+- **iPhone fullscreen:** iPhone Safari can't make web pages fullscreen. Open the game in Safari, tap **Share** then
+  **Add to Home Screen**, and start OpenStrike from the home-screen icon: it runs fullscreen without the browser
+  bars. The game page shows this hint on iPhone the first few times.
+- The admin page has a phone layout: the map list and tile palette become scrollable strips above the map, and you
+  paint with your finger.
 
 ## Admin page
 
@@ -51,6 +63,10 @@ GitHub Pages as normal files instead of one giant HTML file, and adds an admin p
 - Mods change the game in the player's browser (bot matches). Servers you join use their own settings.
 - If a player has saved their own map in a custom slot, it isn't overwritten by a published map.
 - Two gun values (*Unknown A/B*) have unconfirmed meaning.
+- Things that need the game's C++ source and a rebuild, because they live in the game's code rather than its data:
+  stacking objects on top of each other in maps, placing wall/floor decorations yourself (the game generates them),
+  new or smoother gun models, and player character customisation/agent skins.
+- The main menu's 3D background is still the original Desert; matches use your Desert.
 
 ## Develop
 

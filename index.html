@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OpenStrike">
+<meta name="theme-color" content="#0a0b0e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%230a0b0e%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%279%27 fill=%27none%27 stroke=%27%23eba028%27 stroke-width=%273%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%272.5%27 fill=%27%23eba028%27/%3E%3C/svg%3E">
 <title>OpenStrike</title>
 <link rel="stylesheet" href="css/game.css">
@@ -13,7 +18,11 @@
 <div id=loading><div><b>OPEN</b><b style=color:#fff>STRIKE</b></div><span id=status>Loading...</span><small>Click inside the game to lock the mouse. Esc pauses.</small></div><div id=prompt style=display:none;position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);align-items:center;justify-content:center><form id=promptForm style="background:#15171c;border:1px solid #eba028;border-radius:10px;padding:18px;width:min(420px,90vw);font:600 16px system-ui,sans-serif;color:#eee"><div id=promptLabel style=margin-bottom:10px></div><input autocomplete=off id=promptInput style="width:100%;box-sizing:border-box;padding:10px;font-size:18px;border-radius:6px;border:1px solid #555;background:#0d0e11;color:#fff"><div style=display:flex;gap:10px;margin-top:14px;justify-content:flex-end><button style="padding:9px 16px;border-radius:6px;border:1px solid #555;background:#222;color:#ddd"type=button id=promptCancel>Cancel</button> <button style="padding:9px 16px;border-radius:6px;border:0;background:#eba028;color:#111;font-weight:700"type=submit>OK</button></div></form></div><a href=""id=popout rel=noopener target=_blank>Open in new tab ↗</a><canvas id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
 <!-- shell.js: page glue the game calls into (text prompts, touch input, fullscreen) - from the original build -->
 <script src="js/shell.js"></script>
+<!-- mobile.js: no zoom/scroll bounce on phones, iPhone "Add to Home Screen" hint for fullscreen -->
+<script src="js/mobile.js"></script>
 <!-- boot.js: downloads openstrike.wasm, applies data/mods.json, then starts openstrike.js -->
+<!-- texhook.js: swaps the game's generated textures for the HD pack in textures/ -->
+<script src="js/texhook.js"></script>
 <script src="js/boot.js"></script>
 </body>
 </html>

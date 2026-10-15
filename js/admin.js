@@ -64,6 +64,7 @@ function showTab(t) {
   document.querySelectorAll('nav button').forEach((x) => x.classList.toggle('on', x.dataset.tab === t));
   document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x.id === 'tab-' + t));
   if (t === 'maps') { sizeGrid(); drawGrid(); } if (t === 'publish') renderChanges();
+  if (narrow()) window.scrollTo(0, 0);
   try { location.hash = t; } catch (_) { }
 }
 $('pubBtn').onclick = () => showTab('publish');
@@ -129,14 +130,22 @@ $('mapName').oninput = () => { const m = curMap(); if (!m) return; m.name = $('m
 
 // ------------------------------------------------------------------ grid canvas
 const cv = $('grid'), g = cv.getContext('2d'); let CS = 14, hover = null, drag = null;
+const narrow = () => window.matchMedia('(max-width: 900px)').matches;
 function sizeGrid() {
-  const wrap = cv.parentElement, w = wrap.clientWidth - 24, h = wrap.clientHeight - 24;
-  CS = Math.max(6, Math.floor(Math.min(w / COLS, h / ROWS)));
+  const wrap = cv.parentElement, w = wrap.clientWidth - (narrow() ? 8 : 24), h = wrap.clientHeight - 24;
+  CS = narrow() ? Math.max(5, Math.floor(w / COLS)) : Math.max(6, Math.floor(Math.min(w / COLS, h / ROWS)));
   const dpr = window.devicePixelRatio || 1;
   cv.width = COLS * CS * dpr; cv.height = ROWS * CS * dpr; cv.style.width = COLS * CS + 'px'; cv.style.height = ROWS * CS + 'px';
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-window.addEventListener('resize', () => { if ($('tab-maps').classList.contains('on')) { sizeGrid(); drawGrid(); } });
+// phones: tile palette goes directly above the map so you don't scroll between them
+const paletteHome = { parent: null, next: null };
+function placePalette() {
+  const pal = $('palette'); if (!paletteHome.parent) { paletteHome.parent = pal.parentElement; paletteHome.next = pal.nextSibling; }
+  if (narrow()) { if (pal.parentElement !== $('tab-maps').querySelector('.editor')) $('tab-maps').querySelector('.editor').insertBefore(pal, $('tab-maps').querySelector('.canvasWrap')); pal.classList.add('strip'); }
+  else if (pal.parentElement !== paletteHome.parent) { paletteHome.parent.insertBefore(pal, paletteHome.next); pal.classList.remove('strip'); }
+}
+window.addEventListener('resize', () => { placePalette(); if ($('tab-maps').classList.contains('on')) { sizeGrid(); drawGrid(); } });
 function drawGrid() {
   const m = curMap(); if (!m || !cv.width) return;
   g.fillStyle = '#000'; g.fillRect(0, 0, COLS * CS, ROWS * CS);
@@ -263,9 +272,11 @@ function renderGunList() {
     html += `<button class="item ${S.sel.gun === i ? 'on' : ''}" data-i="${i}">${esc(w.name)}${w.name !== d.weapons[i].name ? ` <small>(${esc(d.weapons[i].name)})</small>` : ''}${mod ? '<span class="dot"></span>' : ''}</button>`;
   });
   $('gunList').innerHTML = html;
+  $('gunSelect').innerHTML = S.work.weapons.map((w, i) => `<option value="${i}" ${S.sel.gun === i ? 'selected' : ''}>${esc(w.name)}${w.name !== d.weapons[i].name ? ' (' + esc(d.weapons[i].name) + ')' : ''}</option>`).join('');
   document.querySelectorAll('#gunList .item').forEach((b) => b.onclick = () => { S.sel.gun = +b.dataset.i; renderGunList(); renderGunForm(); });
 }
 $('gunSearch').oninput = renderGunList;
+$('gunSelect').onchange = () => { S.sel.gun = +$('gunSelect').value; renderGunList(); renderGunForm(); };
 function fmt(v) { return typeof v === 'number' && !Number.isInteger(v) ? +v.toFixed(4) : v; }
 function gunBars(w) {
   const max = (k) => Math.max(...S.work.weapons.filter((x) => x.category > 0 && x.category < 6).map((x) => +x[k] || 0), 1);
@@ -336,7 +347,7 @@ function renderSkinGrid() {
     const o = d.skins[i], mod = s.name !== o.name || s.rarity !== o.rarity || s.pattern !== o.pattern || s.colors.join() !== o.colors.join();
     return `<button class="skin ${S.sel.skin === i ? 'on' : ''}" data-i="${i}"><canvas></canvas><b>${esc(s.name)}</b><small class="r${s.rarity}">${esc(d.rarities[s.rarity] || '')}</small>${mod ? '<span class="dot"></span>' : ''}</button>`;
   }).join('');
-  $('skinGrid').querySelectorAll('.skin').forEach((b) => { drawSkin(b.querySelector('canvas'), S.work.skins[+b.dataset.i]); b.onclick = () => { S.sel.skin = +b.dataset.i; renderSkinGrid(); renderSkinForm(); }; });
+  $('skinGrid').querySelectorAll('.skin').forEach((b) => { drawSkin(b.querySelector('canvas'), S.work.skins[+b.dataset.i]); b.onclick = () => { S.sel.skin = +b.dataset.i; renderSkinGrid(); renderSkinForm(); if (narrow()) $('skinForm').scrollIntoView({ behavior: 'smooth' }); }; });
 }
 function renderSkinForm() {
   const i = S.sel.skin, s = S.work.skins[i], o = S.defs.skins[i], d = S.defs, ex = patternExamples();
@@ -473,7 +484,7 @@ async function init() {
   defs.palette.forEach((p) => tileColor[p.ch] = p.color);
   let draft = null; try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (_) { }
   S.work = fromMods(draft || pub);
-  loadGhSettings(); renderAll(); refreshDirty();
+  placePalette(); loadGhSettings(); renderAll(); refreshDirty();
   if (draft && sig(draft) !== sig(toMods(fromMods(pub)))) toast('Restored your unpublished draft');
   const t = (location.hash || '').slice(1); if (['maps', 'guns', 'skins', 'publish'].includes(t)) showTab(t);
   window.__admin = S;

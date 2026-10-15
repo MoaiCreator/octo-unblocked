@@ -5,3 +5,11 @@ canvas#canvas{display:block;width:100vw;height:100vh;outline:0;cursor:default;to
 #loading small{color:#999;font-weight:400;font-size:14px}
 #popout{position:fixed;top:10px;right:10px;z-index:10;display:none;padding:7px 12px;border-radius:6px;background:rgba(20,22,26,.85);color:#eba028;font:600 13px system-ui,sans-serif;text-decoration:none;border:1px solid #eba028}
 #popout:hover{background:#eba028;color:#111}
+
+/* phones */
+html, body { overscroll-behavior: none; touch-action: none; -webkit-text-size-adjust: 100%; position: fixed; inset: 0; width: 100%; }
+html.standalone, html.standalone body { background: #000; }
+#iosHint { position: fixed; left: 50%; top: max(10px, env(safe-area-inset-top)); transform: translateX(-50%); z-index: 30; width: min(560px, calc(100vw - 24px));
+  background: rgba(20,22,26,.95); color: #eee; border: 1px solid #eba028; border-radius: 10px; padding: 10px 40px 10px 14px; font: 14px/1.4 system-ui, sans-serif; }
+#iosHint .share { display: inline-block; padding: 0 6px; border: 1px solid #888; border-radius: 4px; font-size: 12px; }
+#iosHint button { position: absolute; right: 6px; top: 6px; width: 30px; height: 30px; border: 0; border-radius: 6px; background: #333; color: #fff; font-size: 18px; }

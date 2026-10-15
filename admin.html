@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%230a0b0e%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%279%27 fill=%27none%27 stroke=%27%23eba028%27 stroke-width=%273%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%272.5%27 fill=%27%23eba028%27/%3E%3C/svg%3E">
 <title>OpenStrike Admin</title>
@@ -48,7 +48,7 @@
     </div>
     <aside class="side">
       <div class="field"><label>Map name</label><input id="mapName" maxlength="24"><small id="mapNameNote"></small></div>
-      <h3>Tiles <small>(keys 1-9, 0, Q-W-E-R-T)</small></h3>
+      <h3 id="tilesHead">Tiles <small>(keys 1-9, 0, Q-W-E-R-T)</small></h3>
       <div id="palette"></div>
       <h3>Check</h3>
       <div id="checks"></div>
@@ -58,7 +58,7 @@
 
   <!-- ======================= GUNS ======================= -->
   <section id="tab-guns" class="tab">
-    <aside class="list"><input id="gunSearch" placeholder="Search guns..."><div id="gunList"></div></aside>
+    <aside class="list"><input id="gunSearch" placeholder="Search guns..."><select id="gunSelect" class="mobileOnly"></select><div id="gunList"></div></aside>
     <div class="form" id="gunForm"></div>
   </section>
 
