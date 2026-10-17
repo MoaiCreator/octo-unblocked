@@ -4,7 +4,8 @@
   "type": "module",
   "description": "OpenStrike on GitHub Pages + admin page for maps, guns and skins",
   "scripts": {
-    "test": "node tests/admin.test.mjs && node tests/bake.test.mjs",
+    "test": "node tests/admin.test.mjs && node tests/bake.test.mjs && node vr/tests/handling.test.mjs && node vr/tests/world.test.mjs && node vr/tests/sim.test.mjs",
+    "test:vr-browser": "node vr/tests/smoke.mjs && node vr/tests/xr.mjs",
     "serve": "python3 -m http.server 8000",
     "extract": "python3 tools/extract_defaults.py",
     "bake": "node tools/bake.mjs"

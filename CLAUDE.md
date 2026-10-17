@@ -45,9 +45,25 @@ Map rules (`js/mapcheck.js`) were measured against the game's own "playable" che
 where `P` (platform) only connects to `P`/`L`, and blocking `# p c C k o h`. Custom maps that fail it don't appear
 in the game's MAP selector.
 
+## VR mode (`vr/`)
+
+Separate WebXR + three.js game (vendored three 0.186) that plays OpenStrike's data: maps/guns from
+`data/defaults.json` + `data/mods.json` (`vr/js/osdata.js`, guns matched by original name), textures from `textures/`.
+`world.js` turns the 40x48 grid into boxes (TILE 1.5 m; heights in `H`), `sim.js`/`bots.js`/`nav.js`/`core.js` are the
+Octo Strike match code (commit 8efc4ba) with `Sim.shootFrom` for muzzle shots (origin must be within 1.6 m of the eye).
+`handling.js` = pure gun rules (two hands, mags, shells, scope check); `vr.js` = everything else. The human's guns,
+ammo and reloads live in the VR client, not the sim; the sim only gets position/aim/use and shots.
+Controller mapping (xr-standard): 0 trigger, 1 squeeze, 4 A/X, 5 B/Y, axes 2/3 stick. Guns sit in the grip space
+pointing -Z with the palm at the origin; points of interest are in each gun's `userData` (muzzle, magwell, fore,
+scopeRear/Front, lens). The scope renders to a render target with `xr.enabled = false` only while an eye is behind it.
+Tests: `vr/tests/*.test.mjs` (node), `smoke.mjs` (desktop preview, drives the hands with keys), `xr.mjs` (emulated
+Quest 3 via IWER: moves real controller poses). Pass `?lowgfx` in headless runs (6 fps instead of 1).
+Not tested on a real headset yet.
+
 ## Test
 
-    npm test                       # admin.test.mjs (defaults, map rules, GitHub client mocked) + bake.test.mjs
+    npm test                       # admin.test.mjs (defaults, map rules, GitHub client mocked) + bake.test.mjs + vr logic
+    npm run test:vr-browser        # needs a server on :8123, Playwright, and iwer for xr.mjs
     npm run bake                   # openstrike.wasm <- original + data/mods.json (commit both after editing mods.json)
     python3 -m http.server 8000    # then open / and /admin.html
 
