@@ -2,7 +2,6 @@
 
 **Play:** https://moaicreator.github.io/octo-unblocked/
 **Admin (maps, guns, skins):** https://moaicreator.github.io/octo-unblocked/admin.html
-**VR:** https://moaicreator.github.io/octo-unblocked/vr/ (or the **VR PLAY** button on the game page)
 
 OpenStrike is a tactical 5v5 bomb-defusal game (C++ / raylib) compiled to WebAssembly. This repo hosts it on
 GitHub Pages as normal files instead of one giant HTML file, and adds an admin page for editing game content.
@@ -14,6 +13,7 @@ GitHub Pages as normal files instead of one giant HTML file, and adds an admin p
 | `index.html`, `css/game.css` | The game page (same markup as the original build) |
 | `js/shell.js` | Page glue the game calls into: text prompts, touch input, fullscreen (from the original build) |
 | `js/texhook.js`, `textures/` | HD texture pack: swaps the game's generated textures (cobblestone, brick, plaster, crates, metal, sandbags, barrels...) and turns on mipmaps/anisotropic filtering. `?hd=0` turns it off |
+| `js/fx.js` | Graphics and feel upgrade: renders at full screen resolution (sharp on phones/retina), adds texture relief, distance haze, bloom, colour grading, sharpening and anti-aliasing, plus weapon sway, bob, strafe tilt and landing dip. `?fx=0` turns it off, `?post=0` only the image effects, `?res=1.5` sets the render scale |
 | `js/mobile.js`, `manifest.webmanifest`, `icons/` | Phone fixes (no zoom/scroll bounce) and home-screen app support, which is how fullscreen works on iPhone |
 | `js/boot.js` | Loader: downloads `openstrike.wasm` with a progress bar, fills published new maps into the custom slots, starts the game |
 | `openstrike.js`, `openstrike.wasm` | The game (Emscripten runtime + binary). **`openstrike.wasm` contains your published edits** |
@@ -27,7 +27,6 @@ GitHub Pages as normal files instead of one giant HTML file, and adds an admin p
 | `tools/extract_defaults.py` | Regenerates `data/defaults.json` from `data/openstrike.original.wasm` |
 | `tools/make_textures.py` | Regenerates the HD texture pack (all procedural, tileable) |
 | `tools/desert_overhaul.py` | The overhauled Desert layout (writes it into `data/mods.json`; then `npm run bake`) |
-| `vr/` | VR mode (WebXR + three.js), see below |
 | `cpp/` | The earlier CS-LAN C++ prototype (desktop, raylib + UDP) |
 
 ## Phones
@@ -70,34 +69,10 @@ GitHub Pages as normal files instead of one giant HTML file, and adds an admin p
   new or smoother gun models, and player character customisation/agent skins.
 - The main menu's 3D background is still the original Desert; matches use your Desert.
 
-## VR mode (`vr/`)
-
-OpenStrike itself can't run in VR: it's a compiled binary and its source isn't available. So VR is a separate
-WebXR game that plays OpenStrike's own content: the 6 maps (with your admin edits, including Desert), the gun
-stats from the admin page, and the HD texture pack, against bots (5v5 rounds, bomb, economy for the bots).
-Open it in a headset's browser (e.g. Meta Quest Browser) and press **ENTER VR**.
-
-- **Belt:** all 9 guns hang on a belt that follows you (knife, Glock, USP-S, Desert Eagle, MP9, Nova, AK-47, M4A4,
-  AWP). Hold **grip** at a holster to draw, let go to put the gun back.
-- **Two hands:** the MP9, Nova, AK-47, M4A4 and AWP only fire with your other hand gripping the front. Two hands
-  also aim the gun (from your trigger hand to your support hand) and cut recoil.
-- **Scope:** the AWP's scope shows a zoomed view only when you hold it up to your eye.
-- **Reload:** pull the mag out with your other hand (or press **B/Y**), grab a fresh one from the pouch on the front of
-  your belt and push it into the magwell. The Nova loads one shell at a time. Ammo from pulled mags isn't lost.
-- Left stick moves, right stick turns (swapped for left-handed players), **A/X** plants or defuses. Options: name,
-  team, map, bot difficulty, bots per team, dominant hand, snap/smooth turning.
-- *Desktop preview* runs the same game with mouse and keyboard driving the hands (1-9 draw, F support hand,
-  R reload by hand, RMB scope) for checking things without a headset.
-
-Files: `vr/js/vr.js` (session, hands, belt, guns, locomotion, HUD), `handling.js` (gun rules), `world.js` (map grid
-to 3D), `scene.js` (meshes + textures), `models.js` (guns, mags, bots), `osdata.js` (reads `data/`), and the bot match
-code `sim.js`, `bots.js`, `nav.js`, `core.js` from the earlier Octo Strike build.
-
 ## Develop
 
     npm run serve     # http://localhost:8000 (needs a web server, not file://)
-    npm test          # map checker + publishing tests + VR logic tests (Node 18+)
-    npm run test:vr-browser   # headless VR checks (needs Playwright; the XR one also needs `npm i --no-save iwer`)
+    npm test          # map checker + publishing tests (Node 18+)
 
     npm run bake      # rebuild openstrike.wasm from data/openstrike.original.wasm + data/mods.json
 

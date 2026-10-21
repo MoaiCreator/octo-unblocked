@@ -41,29 +41,25 @@ crate (3adc556b), tiles (e33098ab), concrete panels (bb219baa), dirt (9fcbb8d4),
 concrete (eee7957d), sandbags (c887e4f3), dark blue (b624eb5f, unknown use), barrels (f767d344: 4 colour
 columns, one per barrel), glow/flash/smoke/shadow, A/B site letters, minimap (map-dependent, never replace).
 
+## Graphics/feel (`js/fx.js`)
+
+Hooks WebGL like texhook (loaded after it, before boot). The game draws everything with raylib's default shader
+(texture x colDiffuse x vertex colour, `mvp` only); fx.js swaps its source for one with relief, haze and two extra
+uniforms (`fxSway` for the view model, `fxCamOff` for step-up smoothing). Perspective vs 2D is `mvp[2][3] != 0`.
+Per frame on the default framebuffer: the first perspective `mvp` is the pure camera (verified), a depth-only
+`clear` after 3D means the view model comes next, the first ortho `mvp` after 3D is where post-processing runs
+(so the HUD stays crisp). Resolution: the #canvas width/height properties return the size the game set, while
+the backing store is that x scale; viewport/scissor on the default framebuffer are scaled. Post saves and restores
+all GL state it touches. Movement physics was checked in the wasm (func 840): already CS-style (accelerate 5.5,
+friction 5.2, stopspeed 2.03, air accelerate 12, air cap 0.76, gravity 20.3, 64 tick with smooth rendering).
+
 Map rules (`js/mapcheck.js`) were measured against the game's own "playable" check: walkable `. T S A B u L P`,
 where `P` (platform) only connects to `P`/`L`, and blocking `# p c C k o h`. Custom maps that fail it don't appear
 in the game's MAP selector.
 
-## VR mode (`vr/`)
-
-Separate WebXR + three.js game (vendored three 0.186) that plays OpenStrike's data: maps/guns from
-`data/defaults.json` + `data/mods.json` (`vr/js/osdata.js`, guns matched by original name), textures from `textures/`.
-`world.js` turns the 40x48 grid into boxes (TILE 1.5 m; heights in `H`), `sim.js`/`bots.js`/`nav.js`/`core.js` are the
-Octo Strike match code (commit 8efc4ba) with `Sim.shootFrom` for muzzle shots (origin must be within 1.6 m of the eye).
-`handling.js` = pure gun rules (two hands, mags, shells, scope check); `vr.js` = everything else. The human's guns,
-ammo and reloads live in the VR client, not the sim; the sim only gets position/aim/use and shots.
-Controller mapping (xr-standard): 0 trigger, 1 squeeze, 4 A/X, 5 B/Y, axes 2/3 stick. Guns sit in the grip space
-pointing -Z with the palm at the origin; points of interest are in each gun's `userData` (muzzle, magwell, fore,
-scopeRear/Front, lens). The scope renders to a render target with `xr.enabled = false` only while an eye is behind it.
-Tests: `vr/tests/*.test.mjs` (node), `smoke.mjs` (desktop preview, drives the hands with keys), `xr.mjs` (emulated
-Quest 3 via IWER: moves real controller poses). Pass `?lowgfx` in headless runs (6 fps instead of 1).
-Not tested on a real headset yet.
-
 ## Test
 
-    npm test                       # admin.test.mjs (defaults, map rules, GitHub client mocked) + bake.test.mjs + vr logic
-    npm run test:vr-browser        # needs a server on :8123, Playwright, and iwer for xr.mjs
+    npm test                       # admin.test.mjs (defaults, map rules, GitHub client mocked) + bake.test.mjs
     npm run bake                   # openstrike.wasm <- original + data/mods.json (commit both after editing mods.json)
     python3 -m http.server 8000    # then open / and /admin.html
 

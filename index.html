@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="css/game.css">
 </head>
 <body>
-<div id=loading><div><b>OPEN</b><b style=color:#fff>STRIKE</b></div><span id=status>Loading...</span><small>Click inside the game to lock the mouse. Esc pauses.</small></div><div id=prompt style=display:none;position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);align-items:center;justify-content:center><form id=promptForm style="background:#15171c;border:1px solid #eba028;border-radius:10px;padding:18px;width:min(420px,90vw);font:600 16px system-ui,sans-serif;color:#eee"><div id=promptLabel style=margin-bottom:10px></div><input autocomplete=off id=promptInput style="width:100%;box-sizing:border-box;padding:10px;font-size:18px;border-radius:6px;border:1px solid #555;background:#0d0e11;color:#fff"><div style=display:flex;gap:10px;margin-top:14px;justify-content:flex-end><button style="padding:9px 16px;border-radius:6px;border:1px solid #555;background:#222;color:#ddd"type=button id=promptCancel>Cancel</button> <button style="padding:9px 16px;border-radius:6px;border:0;background:#eba028;color:#111;font-weight:700"type=submit>OK</button></div></form></div><a href=""id=popout rel=noopener target=_blank>Open in new tab ↗</a><a href="vr/" id=vrplay title="Play OpenStrike in a VR headset">VR PLAY</a><canvas id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+<div id=loading><div><b>OPEN</b><b style=color:#fff>STRIKE</b></div><span id=status>Loading...</span><small>Click inside the game to lock the mouse. Esc pauses.</small></div><div id=prompt style=display:none;position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);align-items:center;justify-content:center><form id=promptForm style="background:#15171c;border:1px solid #eba028;border-radius:10px;padding:18px;width:min(420px,90vw);font:600 16px system-ui,sans-serif;color:#eee"><div id=promptLabel style=margin-bottom:10px></div><input autocomplete=off id=promptInput style="width:100%;box-sizing:border-box;padding:10px;font-size:18px;border-radius:6px;border:1px solid #555;background:#0d0e11;color:#fff"><div style=display:flex;gap:10px;margin-top:14px;justify-content:flex-end><button style="padding:9px 16px;border-radius:6px;border:1px solid #555;background:#222;color:#ddd"type=button id=promptCancel>Cancel</button> <button style="padding:9px 16px;border-radius:6px;border:0;background:#eba028;color:#111;font-weight:700"type=submit>OK</button></div></form></div><a href=""id=popout rel=noopener target=_blank>Open in new tab ↗</a><canvas id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
 <!-- shell.js: page glue the game calls into (text prompts, touch input, fullscreen) - from the original build -->
 <script src="js/shell.js"></script>
 <!-- mobile.js: no zoom/scroll bounce on phones, iPhone "Add to Home Screen" hint for fullscreen -->
@@ -23,7 +23,7 @@
 <!-- boot.js: downloads openstrike.wasm, applies data/mods.json, then starts openstrike.js -->
 <!-- texhook.js: swaps the game's generated textures for the HD pack in textures/ -->
 <script src="js/texhook.js"></script>
+<script src="js/fx.js"></script>
 <script src="js/boot.js"></script>
-<script>!function(){var b=document.getElementById("vrplay");if((navigator.maxTouchPoints||0)>0&&!navigator.xr)b.style.display="none";else document.addEventListener("pointerlockchange",function(){b.style.display=document.pointerLockElement?"none":""})}();</script>
 </body>
 </html>

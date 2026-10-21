@@ -5,9 +5,6 @@ canvas#canvas{display:block;width:100vw;height:100vh;outline:0;cursor:default;to
 #loading small{color:#999;font-weight:400;font-size:14px}
 #popout{position:fixed;top:10px;right:10px;z-index:10;display:none;padding:7px 12px;border-radius:6px;background:rgba(20,22,26,.85);color:#eba028;font:600 13px system-ui,sans-serif;text-decoration:none;border:1px solid #eba028}
 #popout:hover{background:#eba028;color:#111}
-#vrplay{position:fixed;top:10px;right:10px;z-index:10;padding:7px 12px;border-radius:6px;background:#eba028;color:#111;font:800 13px system-ui,sans-serif;letter-spacing:.5px;text-decoration:none;border:1px solid #eba028}
-#vrplay:hover{background:#ffc04d}
-#popout{top:48px}
 
 /* phones */
 html, body { overscroll-behavior: none; touch-action: none; -webkit-text-size-adjust: 100%; position: fixed; inset: 0; width: 100%; }
