@@ -1,5 +1,5 @@
 {
- "version": 8,
+ "version": 9,
  "build": "f7ebbd2fe74d1c1c",
  "maps": {
   "builtin": [
@@ -189,7 +189,8 @@
  "weapons": [
   {
    "index": 0,
-   "moveSpeed": 7
+   "damage": 400,
+   "moveSpeed": 9
   },
   {
    "index": 12,
@@ -213,5 +214,5 @@
   }
  ],
  "skins": [],
- "updated": "2026-10-15T23:33:22.014Z"
+ "updated": "2026-10-22T10:47:36.594Z"
 }
